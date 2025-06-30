@@ -1,0 +1,53 @@
+package di
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+
+	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/rs/zerolog/log"
+	"github.com/umardev500/go-laundry/internal/config"
+	"github.com/umardev500/go-laundry/internal/ent"
+)
+
+// Open new connection
+func Open(databaseUrl string) *ent.Client {
+	db, err := sql.Open("pgx", databaseUrl)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed opening connection to postgres")
+	}
+
+	// Create an ent.Driver from `db`.
+	drv := entsql.OpenDB(dialect.Postgres, db)
+	return ent.NewClient(ent.Driver(drv))
+}
+
+func NewEntClient(ctx context.Context, config *config.DatabaseConfig) *ent.Client {
+
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		config.User,
+		config.Pass,
+		config.Host,
+		config.Port,
+		config.Name,
+		config.SSLMode,
+	)
+
+	client := Open(dsn)
+	if err := client.Schema.Create(ctx); err != nil {
+		log.Fatal().Err(err).Msg("failed creating schema resources")
+	}
+
+	log.Info().
+		Str("dsn", dsn).
+		Msg("database connected successfully")
+
+	return client
+}
+
+func ProvideEntClient(ctx context.Context, cfg *config.DatabaseConfig) *ent.Client {
+	return NewEntClient(ctx, cfg)
+}
