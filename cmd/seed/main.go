@@ -37,6 +37,10 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to seed merchants")
 	}
 
+	if err := seeds.SeedUsers(context.Background(), tx); err != nil {
+		log.Fatal().Err(err).Msg("failed to seed users")
+	}
+
 	// Commit transaction
 	if err := tx.Commit(); err != nil {
 		log.Fatal().Err(err).Msg("failed to commit transaction")
