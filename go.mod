@@ -5,6 +5,7 @@ go 1.24.4
 require (
 	entgo.io/ent v0.14.4
 	github.com/gofiber/fiber/v2 v2.52.8
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0
 	github.com/jackc/pgx/v5 v5.7.5

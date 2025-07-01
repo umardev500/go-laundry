@@ -30,6 +30,7 @@ func (r *userRepository) Create(ctx context.Context, payload *domain.CreateUserI
 func (r *userRepository) GetByEmail(ctx context.Context, email string) (*ent.User, error) {
 	return r.client.User.
 		Query().
+		WithMerchants().
 		Where(user.EmailEQ(email)).
 		Only(ctx)
 }
