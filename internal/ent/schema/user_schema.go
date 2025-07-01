@@ -37,6 +37,9 @@ func (User) Fields() []ent.Field {
 
 func (User) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("merchants", Merchant.Type),
+		edge.From("merchants", Merchant.Type).
+			Ref("users").
+			Unique().
+			Required(),
 	}
 }
