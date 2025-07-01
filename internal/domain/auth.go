@@ -2,8 +2,6 @@ package domain
 
 import (
 	"context"
-
-	"github.com/umardev500/go-laundry/internal/ent"
 )
 
 // DTO
@@ -15,7 +13,6 @@ type LoginRequest struct {
 
 type LoginResponse struct {
 	Token string `json:"token"`
-	User  *ent.User
 }
 
 type AuthService interface {

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/umardev500/go-laundry/internal/domain"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type authService struct {
@@ -23,8 +24,15 @@ func (a *authService) Login(ctx context.Context, payload *domain.LoginRequest) (
 		return nil, err
 	}
 
+	inputPass := []byte(payload.Password)
+	hashedPass := []byte(u.PasswordHash)
+
+	err = bcrypt.CompareHashAndPassword(hashedPass, inputPass)
+	if err != nil {
+		return nil, err
+	}
+
 	return &domain.LoginResponse{
 		Token: "token",
-		User:  u,
 	}, nil
 }
