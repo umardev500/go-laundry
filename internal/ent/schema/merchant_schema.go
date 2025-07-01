@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
@@ -39,6 +40,9 @@ func (Merchant) Fields() []ent.Field {
 
 func (Merchant) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("users", User.Type),
+		edge.To("users", User.Type).
+			Annotations(
+				entsql.OnDelete(entsql.Cascade),
+			),
 	}
 }
