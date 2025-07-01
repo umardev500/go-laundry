@@ -9,11 +9,11 @@ import (
 	"github.com/google/uuid"
 )
 
-type User struct {
+type Merchant struct {
 	ent.Schema
 }
 
-func (User) Fields() []ent.Field {
+func (Merchant) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).
 			Default(uuid.New).
@@ -24,8 +24,10 @@ func (User) Fields() []ent.Field {
 		field.String("email").
 			Unique().
 			NotEmpty(),
-		field.String("password_hash").
-			Sensitive().
+		field.String("phone").
+			Unique().
+			NotEmpty(),
+		field.String("address").
 			NotEmpty(),
 		field.Time("created_at").
 			Default(time.Now),
@@ -35,8 +37,9 @@ func (User) Fields() []ent.Field {
 	}
 }
 
-func (User) Edges() []ent.Edge {
+func (Merchant) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("merchants", Merchant.Type),
+		edge.From("user", User.Type).
+			Ref("merchants"),
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/umardev500/go-laundry/internal/config"
 	"github.com/umardev500/go-laundry/internal/ent"
+	"github.com/umardev500/go-laundry/internal/ent/migrate"
 )
 
 // Open new connection
@@ -37,7 +38,7 @@ func NewEntClient(ctx context.Context, config *config.DatabaseConfig) *ent.Clien
 	)
 
 	client := Open(dsn)
-	if err := client.Schema.Create(ctx); err != nil {
+	if err := client.Schema.Create(ctx, migrate.WithDropColumn(true), migrate.WithDropIndex(true)); err != nil {
 		log.Fatal().Err(err).Msg("failed creating schema resources")
 	}
 
