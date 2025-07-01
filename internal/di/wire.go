@@ -22,6 +22,11 @@ var UserSet = wire.NewSet(
 	repository.NewUserRepository,
 )
 
+var AuthSet = wire.NewSet(
+	http.NewAuthHandler,
+	service.NewAuthService,
+)
+
 func ProvideContext() context.Context {
 	return context.Background()
 }
@@ -29,6 +34,7 @@ func ProvideContext() context.Context {
 var AppSet = wire.NewSet(
 	ProvideContext,
 	config.LoadDatabaseConfig,
+	AuthSet,
 	UserSet,
 	app.ProvideFiberApp,
 	ProvideEntClient,

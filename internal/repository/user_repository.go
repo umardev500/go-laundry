@@ -14,7 +14,9 @@ type userRepository struct {
 }
 
 func NewUserRepository(client *ent.Client) domain.UserRepository {
-	return &userRepository{}
+	return &userRepository{
+		client: client,
+	}
 }
 
 func (r *userRepository) Create(ctx context.Context, payload *domain.CreateUserInput) (*ent.User, error) {
