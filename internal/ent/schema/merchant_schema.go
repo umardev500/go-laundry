@@ -21,7 +21,8 @@ func (Merchant) Fields() []ent.Field {
 			Immutable().
 			Unique(),
 		field.String("name").
-			NotEmpty(),
+			NotEmpty().
+			Comment("Merchant name e.g. Alpha Laundry, Beta Laundry, etc"),
 		field.String("email").
 			Unique().
 			NotEmpty(),
@@ -30,6 +31,9 @@ func (Merchant) Fields() []ent.Field {
 			NotEmpty(),
 		field.String("address").
 			NotEmpty(),
+		field.Enum("status").
+			Values("pending", "active", "inactive").
+			Default("pending"),
 		field.Time("created_at").
 			Default(time.Now),
 		field.Time("updated_at").
