@@ -6,10 +6,11 @@ import (
 	"strconv"
 	"time"
 
-	jwtlib "github.com/golang-jwt/jwt/v5"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/rs/zerolog/log"
 	"github.com/umardev500/go-laundry/internal/domain"
-	"github.com/umardev500/go-laundry/pkg/jwt"
+	"github.com/umardev500/go-laundry/internal/ent"
+	sharedjwt "github.com/umardev500/go-laundry/pkg/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -55,13 +56,13 @@ func (a *authService) Login(ctx context.Context, payload *domain.LoginRequest) (
 	claims := domain.Claims{
 		Sub:      u.ID,
 		Merchant: u.Edges.Merchants.ID,
-		RegisteredClaims: jwtlib.RegisteredClaims{
-			ExpiresAt: jwtlib.NewNumericDate(time.Now().Add(time.Hour * time.Duration(exp))),
-			IssuedAt:  jwtlib.NewNumericDate(time.Now()),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * time.Duration(exp))),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 
-	token, err := jwt.Sign(claims, []byte(secret))
+	token, err := sharedjwt.Sign(claims, []byte(secret))
 	if err != nil {
 		return nil, err
 	}
@@ -69,4 +70,13 @@ func (a *authService) Login(ctx context.Context, payload *domain.LoginRequest) (
 	return &domain.LoginResponse{
 		Token: token,
 	}, nil
+}
+
+func (a *authService) Me(ctx context.Context) (*ent.User, error) {
+	claims, err := sharedjwt.Claims[*domain.Claims](ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return a.userRepo.GetByID(ctx, claims.Sub)
 }

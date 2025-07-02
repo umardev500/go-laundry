@@ -55,5 +55,17 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 }
 
 func (h *AuthHandler) Me(c *fiber.Ctx) error {
-	return c.JSON("hi")
+	u, err := h.aService.Me(c.UserContext())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(domain.APIResponse{
+			Success: false,
+			Message: err.Error(),
+		})
+	}
+
+	return c.JSON(domain.APIResponse{
+		Success: true,
+		Message: "Get user successfully",
+		Data:    u,
+	})
 }

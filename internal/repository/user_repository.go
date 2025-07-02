@@ -38,6 +38,7 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*ent.Use
 func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (*ent.User, error) {
 	return r.client.User.
 		Query().
+		WithMerchants().
 		Where(user.ID(id)).
 		Only(ctx)
 }

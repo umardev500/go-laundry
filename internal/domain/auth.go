@@ -5,6 +5,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/umardev500/go-laundry/internal/ent"
 )
 
 // DTO
@@ -28,4 +29,5 @@ type Claims struct {
 // Interface
 type AuthService interface {
 	Login(ctx context.Context, payload *LoginRequest) (*LoginResponse, error)
+	Me(ctx context.Context) (*ent.User, error)
 }
