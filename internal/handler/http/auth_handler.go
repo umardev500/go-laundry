@@ -2,9 +2,9 @@ package http
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/rs/zerolog/log"
 	"github.com/umardev500/go-laundry/internal/domain"
 	"github.com/umardev500/go-laundry/internal/ent"
+	"github.com/umardev500/go-laundry/internal/handler/http/middleware"
 )
 
 type AuthHandler struct {
@@ -17,15 +17,9 @@ func NewAuthHandler(aService domain.AuthService) *AuthHandler {
 	}
 }
 
-func (h *AuthHandler) Setup(routers ...fiber.Router) {
-	if len(routers) != 2 {
-		log.Panic().Msg("expected exactly two routers: regular and protected")
-	}
-
-	regular := routers[0]
-	// protected := routers[1]
-
-	regular.Post("/auth/login", h.Login)
+func (h *AuthHandler) Setup(router fiber.Router) {
+	router.Get("/me", middleware.AuthMiddleware, h.Me)
+	router.Post("/login", h.Login)
 }
 
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
@@ -58,4 +52,8 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		Message: "Logged in successfully",
 		Data:    resp,
 	})
+}
+
+func (h *AuthHandler) Me(c *fiber.Ctx) error {
+	return c.JSON("hi")
 }

@@ -13,11 +13,10 @@ func ProvideFiberApp(
 		DisableStartupMessage: true,
 	})
 
-	regular := app.Group("/api")
-	protected := app.Group("/api")
+	api := app.Group("api")
 
-	userHandler.Setup(regular, protected)
-	authHandler.Setup(regular, protected)
+	userHandler.Setup(api.Group("users"))
+	authHandler.Setup(api.Group("auth"))
 
 	return app
 }
