@@ -1,4 +1,4 @@
-package domain
+package response
 
 // DTO
 
@@ -7,11 +7,7 @@ type PaginationInfo struct {
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
 	Total  int `json:"total"`
-}
-
-type DataWithPagination struct {
-	Items      any            `json:"items"`
-	Pagination PaginationInfo `json:"pagination"`
+	Pages  int `json:"pages"`
 }
 
 type APIResponse struct {

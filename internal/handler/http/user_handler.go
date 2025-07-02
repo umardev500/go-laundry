@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/umardev500/go-laundry/internal/domain"
 	"github.com/umardev500/go-laundry/internal/handler/http/middleware"
+	"github.com/umardev500/go-laundry/pkg/response"
 )
 
 type UserHandler struct {
@@ -37,29 +38,17 @@ func (h *UserHandler) GetUsers(c *fiber.Ctx) error {
 	// Get users
 	users, total, err := h.service.GetAll(c.UserContext(), params)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(domain.APIResponse{
+		return c.Status(fiber.StatusInternalServerError).JSON(response.APIResponse{
 			Success: false,
 			Message: err.Error(),
 		})
 	}
 
-	return c.JSON(domain.APIResponse{
+	data := response.NewPaginatedData(users, params.Page, params.Limit, total)
+
+	return c.JSON(response.APIResponse{
 		Success: true,
 		Message: "Get users successfully",
-		Data: domain.DataWithPagination{
-			Items: users,
-			Pagination: domain.PaginationInfo{
-				Page: func() int {
-					if params.Page == 0 {
-						return 1
-					}
-
-					return params.Page
-				}(),
-				Limit:  params.Limit,
-				Offset: params.Offset,
-				Total:  total,
-			},
-		},
+		Data:    data,
 	})
 }
