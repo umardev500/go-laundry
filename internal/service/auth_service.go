@@ -6,9 +6,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
+	jwtlib "github.com/golang-jwt/jwt/v5"
 	"github.com/rs/zerolog/log"
 	"github.com/umardev500/go-laundry/internal/domain"
+	"github.com/umardev500/go-laundry/pkg/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -22,7 +23,6 @@ func NewAuthService(userRepo domain.UserRepository) domain.AuthService {
 	}
 }
 
-// Login implements domain.AuthService.
 func (a *authService) Login(ctx context.Context, payload *domain.LoginRequest) (*domain.LoginResponse, error) {
 	u, err := a.userRepo.GetByEmail(ctx, payload.Email)
 	if err != nil {
@@ -52,19 +52,21 @@ func (a *authService) Login(ctx context.Context, payload *domain.LoginRequest) (
 	}
 
 	// Create a new JWT token with claims
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": u.ID,
-		"iat": time.Now().Unix(),
-		"exp": time.Now().Add(time.Hour * time.Duration(exp)).Unix(),
-	})
+	claims := domain.Claims{
+		Sub:      u.ID,
+		Merchant: u.Edges.Merchants.ID,
+		RegisteredClaims: jwtlib.RegisteredClaims{
+			ExpiresAt: jwtlib.NewNumericDate(time.Now().Add(time.Hour * time.Duration(exp))),
+			IssuedAt:  jwtlib.NewNumericDate(time.Now()),
+		},
+	}
 
-	// Signed the token with the secret key
-	tokenString, err := token.SignedString([]byte(secret))
+	token, err := jwt.Sign(claims, []byte(secret))
 	if err != nil {
 		return nil, err
 	}
 
 	return &domain.LoginResponse{
-		Token: tokenString,
+		Token: token,
 	}, nil
 }
