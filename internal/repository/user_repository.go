@@ -21,14 +21,13 @@ func NewUserRepository(client *ent.Client) domain.UserRepository {
 }
 
 func (r *userRepository) Create(ctx context.Context, payload *domain.CreateUserInput) (*ent.User, error) {
-	r.client.User.
+	return r.client.User.
 		Create().
 		SetName(payload.Name).
 		SetEmail(payload.Email).
 		SetPasswordHash(payload.Password).
 		SetMerchantsID(payload.MerchantID).
 		Save(ctx)
-	return nil, nil
 }
 
 func (r *userRepository) GetAll(ctx context.Context, params *domain.GetUsersParams) ([]*ent.User, int, error) {

@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 
 	"github.com/umardev500/go-laundry/internal/domain"
 	sharedjwt "github.com/umardev500/go-laundry/pkg/jwt"
@@ -22,7 +23,7 @@ func NewMerchantRegisterUsecase(
 	}
 }
 
-func (u *MerchantRegistrationUsecase) Register(ctx context.Context) error {
+func (u *MerchantRegistrationUsecase) Register(ctx context.Context, merchant *domain.CreateMerchantInput) error {
 	// Get claims
 	claims, err := sharedjwt.Claims[*domain.Claims](ctx)
 	if err != nil {
@@ -35,9 +36,20 @@ func (u *MerchantRegistrationUsecase) Register(ctx context.Context) error {
 		return err
 	}
 
-	// TODO: Check if user already owns a merchant
+	// Check if user already owns a merchant
+	exists, err := u.merchantRepo.ExistsByUserID(ctx, claims.Sub)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return errors.New("user already owns a merchant")
+	}
 
-	// TODO: Create merchant
+	// Create merchant
+	merchantInput := &domain.CreateMerchantInput{}
+	if _, err := u.merchantRepo.Create(ctx, merchantInput); err != nil {
+		return err
+	}
 
 	// TODO: Assign 'Owner' role to user
 
