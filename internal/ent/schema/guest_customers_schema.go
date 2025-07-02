@@ -10,11 +10,11 @@ import (
 	"github.com/google/uuid"
 )
 
-type User struct {
+type GuestCustomers struct {
 	ent.Schema
 }
 
-func (User) Fields() []ent.Field {
+func (GuestCustomers) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).
 			Default(uuid.New).
@@ -22,11 +22,9 @@ func (User) Fields() []ent.Field {
 			Unique(),
 		field.String("name").
 			NotEmpty(),
-		field.String("email").
-			Unique().
+		field.String("phone").
 			NotEmpty(),
-		field.String("password_hash").
-			Sensitive().
+		field.String("address").
 			NotEmpty(),
 		field.Time("created_at").
 			Default(time.Now),
@@ -36,13 +34,8 @@ func (User) Fields() []ent.Field {
 	}
 }
 
-func (User) Edges() []ent.Edge {
+func (GuestCustomers) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("merchants", Merchant.Type).
-			Ref("users").
-			Unique().
-			Required(),
-
 		edge.To("orders", Orders.Type).
 			Annotations(
 				entsql.OnDelete(entsql.SetNull),
