@@ -3,5 +3,5 @@ package context
 import "fmt"
 
 var (
-	ErrNotFound error = fmt.Errorf("not found")
+	ErrNotFound error = fmt.Errorf("user context not found")
 )
