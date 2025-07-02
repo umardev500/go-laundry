@@ -8,15 +8,18 @@ import (
 	"github.com/umardev500/go-laundry/internal/ent"
 	"github.com/umardev500/go-laundry/internal/ent/merchant"
 	"github.com/umardev500/go-laundry/internal/ent/user"
+	"github.com/umardev500/go-laundry/pkg/transaction"
 )
 
 type userRepository struct {
 	client *ent.Client
+	tm     *transaction.TransactionManager
 }
 
-func NewUserRepository(client *ent.Client) domain.UserRepository {
+func NewUserRepository(client *ent.Client, tm *transaction.TransactionManager) domain.UserRepository {
 	return &userRepository{
 		client: client,
+		tm:     tm,
 	}
 }
 
@@ -26,7 +29,7 @@ func (r *userRepository) Create(ctx context.Context, payload *domain.CreateUserI
 		SetName(payload.Name).
 		SetEmail(payload.Email).
 		SetPasswordHash(payload.Password).
-		SetMerchantsID(payload.MerchantID).
+		SetMerchantID(payload.MerchantID).
 		Save(ctx)
 }
 
@@ -34,7 +37,7 @@ func (r *userRepository) GetAll(ctx context.Context, params *domain.GetUsersPara
 	query := r.client.User.
 		Query().
 		Where(
-			user.HasMerchantsWith(
+			user.HasMerchantWith(
 				merchant.IDEQ(params.MerchantID),
 			),
 		)
@@ -59,7 +62,7 @@ func (r *userRepository) GetAll(ctx context.Context, params *domain.GetUsersPara
 func (r *userRepository) GetByEmail(ctx context.Context, email string) (*ent.User, error) {
 	return r.client.User.
 		Query().
-		WithMerchants().
+		WithMerchant().
 		Where(user.EmailEQ(email)).
 		Only(ctx)
 }
@@ -67,7 +70,18 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*ent.Use
 func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (*ent.User, error) {
 	return r.client.User.
 		Query().
-		WithMerchants().
+		WithMerchant().
 		Where(user.ID(id)).
 		Only(ctx)
+}
+
+func (r *userRepository) SetMerchantID(ctx context.Context, userID uuid.UUID, merchantID uuid.UUID) error {
+	client := r.tm.GetClient(ctx)
+
+	_, err := client.User.
+		Update().
+		Where(user.ID(userID)).
+		SetMerchantID(merchantID).
+		Save(ctx)
+	return err
 }

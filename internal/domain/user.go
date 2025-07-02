@@ -37,6 +37,7 @@ type UserRepository interface {
 	GetAll(ctx context.Context, params *GetUsersParams) ([]*ent.User, int, error)
 	GetByEmail(ctx context.Context, email string) (*ent.User, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*ent.User, error)
+	SetMerchantID(ctx context.Context, userID uuid.UUID, merchantID uuid.UUID) error
 }
 
 type UserService interface {

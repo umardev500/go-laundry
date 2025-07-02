@@ -17,10 +17,10 @@ type CreateMerchantInput struct {
 
 // DTO
 type CreateMerchantRequest struct {
-	Name    string `json:"name"`
-	Email   string `json:"email"`
-	Phone   string `json:"phone"`
-	Address string `json:"address"`
+	Name    string `json:"name" validate:"required"`
+	Email   string `json:"email" validate:"required"`
+	Phone   string `json:"phone" validate:"required"`
+	Address string `json:"address" validate:"required"`
 }
 
 type MerchantRepository interface {
@@ -28,5 +28,6 @@ type MerchantRepository interface {
 	ExistsByUserID(ctx context.Context, ownerID uuid.UUID) (bool, error)
 }
 
-type MerchantService interface {
+type MerchantUsecase interface {
+	Register(ctx context.Context, merchant *CreateMerchantRequest) error
 }

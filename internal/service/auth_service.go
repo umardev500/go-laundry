@@ -55,7 +55,7 @@ func (a *authService) Login(ctx context.Context, payload *domain.LoginRequest) (
 	// Create a new JWT token with claims
 	claims := domain.Claims{
 		Sub:      u.ID,
-		Merchant: u.Edges.Merchants.ID,
+		Merchant: u.Edges.Merchant.ID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * time.Duration(exp))),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

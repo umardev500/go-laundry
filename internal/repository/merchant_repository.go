@@ -8,14 +8,18 @@ import (
 	"github.com/umardev500/go-laundry/internal/ent"
 	"github.com/umardev500/go-laundry/internal/ent/merchant"
 	"github.com/umardev500/go-laundry/internal/ent/user"
+	"github.com/umardev500/go-laundry/pkg/transaction"
 )
 
 type merchantRepository struct {
 	client *ent.Client
+	tm     *transaction.TransactionManager
 }
 
 func (r *merchantRepository) Create(ctx context.Context, payload *domain.CreateMerchantInput) (*ent.Merchant, error) {
-	return r.client.Merchant.
+	client := r.tm.GetClient(ctx)
+
+	return client.Merchant.
 		Create().
 		SetName(payload.Name).
 		SetEmail(payload.Email).
@@ -38,8 +42,9 @@ func (r *merchantRepository) ExistsByUserID(ctx context.Context, ownerID uuid.UU
 	return exist, nil
 }
 
-func NewMerchantRepository(client *ent.Client) domain.MerchantRepository {
+func NewMerchantRepository(client *ent.Client, tm *transaction.TransactionManager) domain.MerchantRepository {
 	return &merchantRepository{
 		client: client,
+		tm:     tm,
 	}
 }

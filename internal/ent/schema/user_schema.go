@@ -38,10 +38,9 @@ func (User) Fields() []ent.Field {
 
 func (User) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("merchants", Merchant.Type).
+		edge.From("merchant", Merchant.Type).
 			Ref("users").
-			Unique().
-			Required(),
+			Unique(),
 
 		edge.To("orders", Orders.Type).
 			Annotations(

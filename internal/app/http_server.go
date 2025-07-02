@@ -8,6 +8,7 @@ import (
 func ProvideFiberApp(
 	userHandler *http.UserHandler,
 	authHandler *http.AuthHandler,
+	merchantHandler *http.MerchantHandler,
 ) *fiber.App {
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
@@ -17,6 +18,7 @@ func ProvideFiberApp(
 
 	userHandler.Setup(api.Group("users"))
 	authHandler.Setup(api.Group("auth"))
+	merchantHandler.Setup(api.Group("merchants"))
 
 	return app
 }

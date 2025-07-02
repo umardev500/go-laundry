@@ -6,24 +6,28 @@ import (
 
 	"github.com/umardev500/go-laundry/internal/domain"
 	sharedjwt "github.com/umardev500/go-laundry/pkg/jwt"
+	"github.com/umardev500/go-laundry/pkg/transaction"
 )
 
 type MerchantRegistrationUsecase struct {
+	tm           *transaction.TransactionManager
 	userRepo     domain.UserRepository
 	merchantRepo domain.MerchantRepository
 }
 
 func NewMerchantRegisterUsecase(
+	tm *transaction.TransactionManager,
 	userRepo domain.UserRepository,
 	merchantRepo domain.MerchantRepository,
-) *MerchantRegistrationUsecase {
+) domain.MerchantUsecase {
 	return &MerchantRegistrationUsecase{
+		tm:           tm,
 		userRepo:     userRepo,
 		merchantRepo: merchantRepo,
 	}
 }
 
-func (u *MerchantRegistrationUsecase) Register(ctx context.Context, merchant *domain.CreateMerchantInput) error {
+func (u *MerchantRegistrationUsecase) Register(ctx context.Context, merchant *domain.CreateMerchantRequest) error {
 	// Get claims
 	claims, err := sharedjwt.Claims[*domain.Claims](ctx)
 	if err != nil {
@@ -45,13 +49,32 @@ func (u *MerchantRegistrationUsecase) Register(ctx context.Context, merchant *do
 		return errors.New("user already owns a merchant")
 	}
 
-	// Create merchant
-	merchantInput := &domain.CreateMerchantInput{}
-	if _, err := u.merchantRepo.Create(ctx, merchantInput); err != nil {
+	// Using transaction
+	err = u.tm.WithTx(ctx, func(ctx context.Context) error {
+		// Create merchant
+		merchantInput := &domain.CreateMerchantInput{
+			Name:    merchant.Name,
+			Email:   merchant.Email,
+			Phone:   merchant.Phone,
+			Address: merchant.Address,
+		}
+		merchantCreated, err := u.merchantRepo.Create(ctx, merchantInput)
+		if err != nil {
+			return err
+		}
+
+		// Set merchant id to the user
+		if err := u.userRepo.SetMerchantID(ctx, claims.Sub, merchantCreated.ID); err != nil {
+			return err
+		}
+
+		// TODO: Assign 'Owner' role to user
+
+		return nil
+	})
+	if err != nil {
 		return err
 	}
 
-	// TODO: Assign 'Owner' role to user
-
-	panic("unimplemented")
+	return nil
 }

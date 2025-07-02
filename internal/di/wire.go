@@ -6,6 +6,7 @@ package di
 import (
 	"context"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/wire"
 	"github.com/umardev500/go-laundry/internal/app"
@@ -14,6 +15,8 @@ import (
 	"github.com/umardev500/go-laundry/internal/handler/http"
 	"github.com/umardev500/go-laundry/internal/repository"
 	"github.com/umardev500/go-laundry/internal/service"
+	"github.com/umardev500/go-laundry/internal/usecase"
+	"github.com/umardev500/go-laundry/pkg/transaction"
 )
 
 var UserSet = wire.NewSet(
@@ -27,17 +30,30 @@ var AuthSet = wire.NewSet(
 	service.NewAuthService,
 )
 
+var MerchantSet = wire.NewSet(
+	http.NewMerchantHandler,
+	usecase.NewMerchantRegisterUsecase,
+	repository.NewMerchantRepository,
+)
+
 func ProvideContext() context.Context {
 	return context.Background()
 }
 
+func ProvideValidator() *validator.Validate {
+	return validator.New()
+}
+
 var AppSet = wire.NewSet(
 	ProvideContext,
+	ProvideValidator,
 	config.LoadDatabaseConfig,
 	AuthSet,
 	UserSet,
+	MerchantSet,
 	app.ProvideFiberApp,
 	ProvideEntClient,
+	transaction.NewTransactionManager,
 )
 
 func InitializeFiberApp() *fiber.App {
