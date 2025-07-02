@@ -44,5 +44,21 @@ func (Merchant) Edges() []ent.Edge {
 			Annotations(
 				entsql.OnDelete(entsql.Cascade),
 			),
+		edge.To("guest_customers", GuestCustomers.Type).
+			Annotations(
+				entsql.OnDelete(entsql.Cascade),
+			),
+		edge.To("item_types", ItemType.Type).
+			Annotations(
+				entsql.OnDelete(entsql.Cascade),
+			),
+		edge.To("units", Unit.Type).
+			Annotations(
+				entsql.OnDelete(entsql.Cascade),
+			),
+		edge.To("orders", Orders.Type).
+			Annotations(
+				entsql.OnDelete(entsql.Cascade),
+			),
 	}
 }

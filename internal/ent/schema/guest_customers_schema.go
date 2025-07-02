@@ -36,6 +36,10 @@ func (GuestCustomers) Fields() []ent.Field {
 
 func (GuestCustomers) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.From("merchant", Merchant.Type).
+			Ref("guest_customers").
+			Unique().
+			Required(),
 		edge.To("orders", Orders.Type).
 			Annotations(
 				entsql.OnDelete(entsql.SetNull),

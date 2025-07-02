@@ -38,6 +38,10 @@ func (Unit) Fields() []ent.Field {
 
 func (Unit) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.From("merchant", Merchant.Type).
+			Ref("units").
+			Unique().
+			Required(),
 		edge.To("item_types", ItemType.Type).
 			Annotations(
 				entsql.OnDelete(entsql.SetNull),

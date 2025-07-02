@@ -36,6 +36,10 @@ func (ItemType) Fields() []ent.Field {
 
 func (ItemType) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.From("merchant", Merchant.Type).
+			Ref("item_types").
+			Unique().
+			Required(),
 		edge.From("unit", Unit.Type).
 			Ref("item_types").
 			Unique(),
