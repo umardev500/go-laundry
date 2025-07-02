@@ -20,7 +20,7 @@ func (Orders) Fields() []ent.Field {
 			Immutable().
 			Unique(),
 		field.Enum("status").
-			Values("pending", "in_progress", "completed", "cancelled").
+			Values("pending", "ready_for_pickup", "on_the_way", "in_progress", "delivery", "completed", "cancelled").
 			Default("pending"),
 		field.Float("total_price").
 			Default(0),
