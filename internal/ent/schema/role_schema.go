@@ -4,29 +4,23 @@ import (
 	"time"
 
 	"entgo.io/ent"
-	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 )
 
-type User struct {
+type Role struct {
 	ent.Schema
 }
 
-func (User) Fields() []ent.Field {
+func (Role) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).
 			Default(uuid.New).
 			Immutable().
 			Unique(),
 		field.String("name").
-			NotEmpty(),
-		field.String("email").
-			Unique().
-			NotEmpty(),
-		field.String("password_hash").
-			Sensitive().
 			NotEmpty(),
 		field.Time("created_at").
 			Default(time.Now),
@@ -36,20 +30,21 @@ func (User) Fields() []ent.Field {
 	}
 }
 
-func (User) Edges() []ent.Edge {
+func (Role) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("merchant", Merchant.Type).
-			Ref("users").
+			Ref("roles").
 			Unique(),
+		edge.From("users", User.Type).
+			Ref("roles"),
+		edge.To("permissions", Permission.Type),
+	}
+}
 
-		edge.To("orders", Orders.Type).
-			Annotations(
-				entsql.OnDelete(entsql.SetNull),
-			),
-
-		edge.To("roles", Role.Type).
-			Annotations(
-				entsql.OnDelete(entsql.Cascade),
-			),
+func (Role) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("name").
+			Edges("merchant").
+			Unique(),
 	}
 }

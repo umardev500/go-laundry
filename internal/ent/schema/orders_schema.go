@@ -42,10 +42,10 @@ func (Orders) Edges() []ent.Edge {
 			Ref("orders").
 			Unique().
 			Required(),
-		edge.From("guest_customers", GuestCustomers.Type).
+		edge.From("guest_customer", GuestCustomers.Type).
 			Ref("orders").
 			Unique(),
-		edge.From("users", User.Type).
+		edge.From("user", User.Type).
 			Ref("orders").
 			Unique(),
 		edge.To("order_items", OrderItem.Type).
