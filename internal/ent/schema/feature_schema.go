@@ -38,5 +38,9 @@ func (Feature) Edges() []ent.Edge {
 			Annotations(
 				entsql.OnDelete(entsql.Cascade),
 			),
+		edge.To("plans", Plan.Type).
+			Annotations(
+				entsql.OnDelete(entsql.SetNull),
+			),
 	}
 }
