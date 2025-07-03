@@ -68,5 +68,9 @@ func (Merchant) Edges() []ent.Edge {
 			Annotations(
 				entsql.OnDelete(entsql.Cascade),
 			),
+		edge.To("merchant_features", MerchantFeature.Type).
+			Annotations(
+				entsql.OnDelete(entsql.Cascade),
+			),
 	}
 }
