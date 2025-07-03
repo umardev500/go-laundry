@@ -19,7 +19,8 @@ func (Feature) Fields() []ent.Field {
 			Immutable().
 			Unique(),
 		field.String("name").
-			NotEmpty(),
+			NotEmpty().
+			Unique(),
 		field.String("description").
 			Optional().
 			Nillable(),

@@ -4,6 +4,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 )
 
@@ -32,6 +33,15 @@ func (Permission) Edges() []ent.Edge {
 		edge.From("roles", Role.Type).
 			Ref("permissions"),
 		edge.From("feature", Feature.Type).
-			Ref("permissions"),
+			Ref("permissions").
+			Unique(),
+	}
+}
+
+func (Permission) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("name").
+			Edges("feature").
+			Unique(),
 	}
 }

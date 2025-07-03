@@ -17,7 +17,7 @@ ent-clean:
 	@find ./internal/ent -mindepth 1 -maxdepth 1 ! -name schema -exec rm -rf {} +
 
 gen-ent:
-	ent generate ./internal/ent/schema
+	ent generate --feature sql/upsert ./internal/ent/schema
 
 gen-schema:
 ifndef name

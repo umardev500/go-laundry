@@ -41,6 +41,10 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to seed users")
 	}
 
+	if err := seeds.SeedFeatures(context.Background(), tx); err != nil {
+		log.Fatal().Err(err).Msg("failed to seed features")
+	}
+
 	// Commit transaction
 	if err := tx.Commit(); err != nil {
 		log.Fatal().Err(err).Msg("failed to commit transaction")
