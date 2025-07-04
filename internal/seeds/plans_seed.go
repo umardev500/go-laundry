@@ -33,7 +33,7 @@ func SeedPlans(ctx context.Context, featureIDs []uuid.UUID, tx *ent.Tx) error {
 			SetPrice(p.Price).
 			SetDescription(p.Description).
 			SetMaxBranch(p.MaxBranch).
-			SetMaxOrder(p.MaxOrder).
+			SetMaxDailyOrders(p.MaxOrder).
 			SetMaxUsers(p.MaxUsers).
 			SetMaxCustomers(p.MaxCustomers).
 			SetBillingCycle(p.BillingCycle).

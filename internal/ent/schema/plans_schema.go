@@ -38,7 +38,7 @@ func (Plan) Fields() []ent.Field {
 			Positive().
 			Comment("Maximum number of branches.\nIf null, there is no limit."),
 
-		field.Int("max_order").
+		field.Int("max_daily_orders").
 			Optional().
 			Nillable().
 			Positive().
