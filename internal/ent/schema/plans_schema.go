@@ -21,7 +21,8 @@ func (Plan) Fields() []ent.Field {
 			Unique(),
 
 		field.String("name").
-			NotEmpty(),
+			NotEmpty().
+			Unique(),
 
 		field.String("description").
 			Optional().
@@ -43,7 +44,7 @@ func (Plan) Fields() []ent.Field {
 			Positive().
 			Comment("Maximum number of orders.\nIf null, there is no limit."),
 
-		field.Int("max_admin_users").
+		field.Int("max_users").
 			Optional().
 			Nillable().
 			Positive().

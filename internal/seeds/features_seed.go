@@ -3,6 +3,7 @@ package seeds
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/internal/constants"
 	"github.com/umardev500/go-laundry/internal/domain"
 	"github.com/umardev500/go-laundry/internal/ent"
@@ -76,7 +77,9 @@ var FeaturesSeed = []domain.CreateFeatureInput{
 	RoleManagement,
 }
 
-func SeedFeatures(ctx context.Context, tx *ent.Tx) error {
+func SeedFeatures(ctx context.Context, tx *ent.Tx) ([]uuid.UUID, error) {
+	featureIDs := []uuid.UUID{}
+
 	for _, f := range FeaturesSeed {
 		// Upsert feature
 		ftID, err := tx.Feature.
@@ -88,8 +91,11 @@ func SeedFeatures(ctx context.Context, tx *ent.Tx) error {
 			UpdateNewValues().
 			ID(ctx)
 
+		// Add feature id to list
+		featureIDs = append(featureIDs, ftID)
+
 		if err != nil {
-			return err
+			return featureIDs, err
 		}
 
 		// Create permissions
@@ -107,5 +113,5 @@ func SeedFeatures(ctx context.Context, tx *ent.Tx) error {
 
 	}
 
-	return nil
+	return featureIDs, nil
 }
