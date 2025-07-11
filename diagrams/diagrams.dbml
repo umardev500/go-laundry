@@ -116,13 +116,13 @@ Table plans {
 
 Table plan_variants {
   id uuid [pk]
-  plan_variant_id uuid [ref: > plan_variants.id]
+  plan_id uuid [ref: > plans.id]
   billing_cycle enum('monthly', 'quarterly', 'yearly')
   price decimal(10,2) [not null]
   is_active bool [default: true]
 
   Indexes {
-    (plan_variant_id, billing_cycle) [unique]
+    (plan_id, billing_cycle) [unique]
   }
 
 }
