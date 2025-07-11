@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"strconv"
 
@@ -22,9 +23,15 @@ func init() {
 
 func main() {
 	cfg := config.Load()
+	client := di.GetEntClient(cfg)
 	app := di.InitializeFiberApp(cfg)
 
 	port := ":" + strconv.Itoa(cfg.Port)
+
+	// Migrate database
+	if err := client.Schema.Create(context.Background()); err != nil {
+		log.Fatal().Err(err).Msg("failed creating schema resources")
+	}
 
 	log.Info().Msgf("Listening on port %s", port)
 
