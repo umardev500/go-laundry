@@ -1,0 +1,532 @@
+// INFO
+Table activity_log {
+  id int [pk, increment]
+  tenant_id int [not null, ref: > tenants.id]
+  user_id int [not null, ref: > users.id]
+  scope enum('admin', 'tenant', 'customer') [not null]
+  action varchar [not null, note: '"LOGIN", "UPDATE_ORDER"']
+  source_type varchar [not null, note: 'Order']
+  source_id int [not null]
+  message text
+  metadata json
+  device_id varchar
+  device_model varchar
+  os_version varchar
+  app_version varchar
+  ip_address varchar(45)
+  user_agent varchar(1024)
+  created_at timestamp [not null, default: `now()`]
+}
+
+// RBAC
+Table users {
+  id uuid [pk]
+  phone varchar [not null, unique]
+  email varchar [not null, unique]
+  password_hash varchar [not null]
+  type enum('platform', 'tenant', 'customer')
+}
+
+Table tenant_users {
+  id uuid [pk]
+  user_id uuid [ref: > users.id]
+  tenant_id uuid [ref: > tenants.id]
+  branch_id uuid [ref: > branches.id]
+  name varchar [not null]
+  avatar_url varchar
+  status enum('active', 'inactive', 'suspended') [default: 'active']
+
+  Indexes {
+    (user_id, tenant_id, branch_id) [unique, note: "Same user cannot be linked to the same tenant + branch more than once."]
+  }
+
+}
+
+Table roles {
+  id uuid [pk]
+  name varchar [not null]
+  scope enum('platform', 'tenant')
+  tenant_id uuid [ref: > tenants.id]
+}
+
+Table user_roles {
+  id uuid [pk]
+  user_id uuid [ref: > users.id]
+  role_id uuid [ref: > roles.id]
+}
+
+Table features {
+  id uuid [pk]
+  name varchar [not null, unique]
+  description text
+}
+
+Table permissions {
+  id uuid [pk]
+  feature_id uuid [ref: > features.id]
+  name varchar [not null]
+  description text
+}
+
+Table role_permissions {
+  role_id uuid [ref: > roles.id]
+  permission_id uuid [ref: > permissions.id]
+
+  Indexes {
+    (role_id, permission_id) [unique]
+  }
+
+}
+
+Table plan_permissions {
+  id uuid [pk]
+  plan_variant_id uuid [ref: > plan_variants.id]
+  permission_id uuid [ref: > permissions.id]
+
+  Indexes {
+    (plan_variant_id, permission_id) [unique]
+  }
+
+}
+
+// Region
+Table provinces {
+  id int [pk]
+  name varchar
+}
+
+Table regencies {
+  id int [pk]
+  province_id int [ref: > provinces.id]
+  name varchar
+}
+
+Table districts {
+  id int [pk]
+  regency_id int [ref: > regencies.id]
+  name varchar
+}
+
+// Plan
+Table plans {
+  id uuid [pk]
+  name varchar [not null]
+  description text
+}
+
+Table plan_variants {
+  id uuid [pk]
+  plan_variant_id uuid [ref: > plan_variants.id]
+  billing_cycle enum('monthly', 'quarterly', 'yearly')
+  price decimal(10,2) [not null]
+  is_active bool [default: true]
+
+  Indexes {
+    (plan_variant_id, billing_cycle) [unique]
+  }
+
+}
+
+// Customers
+Table customers {
+  id uuid [pk]
+  user_id uuid [ref: > users.id]
+  full_name varchar [not null]
+  avatar_url varchar
+}
+
+Table customer_spending {
+  id uuid [pk]
+  customer_id uuid [ref: > customers.id]
+  tenant_id uuid [ref: > tenants.id]
+  total_spent decimal(10,2) [default: 0]
+  updated_at timestamp [default: 'now()']
+
+  Indexes {
+    (customer_id, tenant_id) [unique]
+  }
+
+}
+
+
+Table customer_addresses {
+  id uuid [pk]
+  customer_id uuid [ref: > customers.id]
+  recipient_name varchar [not null]
+  phone varchar
+  address varchar [not null]
+  province_id int [ref: > provinces.id]
+  regency_id int [ref: > regencies.id]
+  district_id int [ref: > districts.id]
+  postal_code varchar
+  is_default bool [default: false]
+}
+
+Table customer_levels {
+  id uuid [pk]
+  tenant_id uuid [ref: > tenants.id]
+  name varchar [not null]
+  description text
+  min_total_spent decimal(10,2) [not null]
+  discount_type enum('percentage', 'fixed')
+  discount_value decimal(10,2) [default: 0]
+  is_active bool [default: true]
+}
+
+Table customer_level_assignments {
+  id uuid [pk]
+  customer_id uuid [ref: > customers.id]
+  tenant_id uuid [ref: > tenants.id]
+  level_id uuid [ref: > customer_levels.id]
+  assigned_at timestamp [default: 'now()']
+}
+
+Table customer_ratings {
+  id uuid [pk]
+  customer_id uuid [ref: > customers.id]
+  tenant_id uuid [ref: > tenants.id]
+  branch_id uuid [ref: > branches.id]
+  order_id uuid [ref: > orders.id]
+  rating int [not null, note: "1 to 5 stars"]
+  comment text
+  created_at timestamp [default: 'now()']
+
+  response_user_id uuid [ref: > users.id]
+  response text [note: "Tenant reply to this review"]
+  responded_at timestamp
+
+  is_visible bool [default: true]
+
+  Indexes {
+    (customer_id, order_id) [unique, note: "One customer can only rate one order once"]
+  }
+
+}
+
+Table customer_rating_images {
+  id uuid [pk]
+  rating_id uuid [ref: > customer_ratings.id]
+  image_url varchar [not null]
+  uploaded_at timestamp [default: 'now()']
+
+  Indexes {
+    (rating_id)
+  }
+
+}
+
+
+// Tenant
+Table tenants {
+  id uuid [pk]
+  owner_user uuid [ref: > users.id, unique, not null]
+  name varchar [not null]
+  description text
+  plan_variant_id uuid [ref: > plan_variants.id]
+  phone varchar
+  email varchar
+  address varchar
+  province_id int [ref: > provinces.id]
+  regency_id int [ref: > regencies.id]
+  district_id int [ref: > districts.id]
+  postal_code varchar
+  logo_url varchar
+  status enum('pending', 'active', 'suspended', 'closed') [default: 'pending']
+  latitude decimal(10,6)
+  longitude decimal(10,6)
+}
+
+Table branches {
+  id uuid [pk]
+  tenant_id uuid [ref: > tenants.id]
+  name varchar [not null]
+  description text
+  phone varchar
+  email varchar
+  address varchar
+  province_id int [ref: > provinces.id]
+  regency_id int [ref: > regencies.id]
+  district_id int [ref: > districts.id]
+  postal_code varchar
+  latitude decimal(10,6)
+  longitude decimal(10,6)
+  status enum('active', 'suspended', 'closed') [default: 'active']
+}
+
+Table service_categories {
+  id uuid [pk]
+  tenant_id uuid [ref: > tenants.id]
+  name varchar [not null]
+  description text
+}
+
+Table units {
+  id uuid [pk]
+  tenant_id uuid [ref: > tenants.id]
+  name varchar [not null, unique]
+  description text
+}
+
+Table services {
+  id uuid [pk]
+  tenant_id uuid [ref: > tenants.id]
+  category_id uuid [ref: > service_categories.id]
+  name varchar [not null]
+  description text
+  is_active bool [default: true]
+}
+
+Table service_variants {
+  id uuid [pk]
+  service_id uuid [ref: > services.id]
+  unit_id uuid [ref: > units.id]
+  price_per_unit decimal(10,2) [not null]
+  description text
+  is_active bool [default: true]
+}
+
+Table branch_service_variants {
+  id uuid [pk]
+  branch_id uuid [ref: > branches.id]
+  service_variant_id uuid [ref: > service_variants.id]
+  price_per_unit decimal(10,2) [not null]
+  is_active bool [default: true]
+  note text
+  Indexes {
+    (branch_id, service_variant_id) [unique]
+  }
+
+}
+
+
+
+Table orders {
+  id uuid [pk]
+  customer_id uuid [ref: > customers.id]
+  tenant_id uuid [ref: > tenants.id]
+  branch_id uuid [ref: > branches.id]
+  pickup_address_id uuid [ref: > customer_addresses.id]
+  delivery_address_id uuid [ref: > customer_addresses.id]
+  total_amount decimal(10,2) [default: 0]
+  total_discount_amount decimal(10,2) [default: 0]
+  final_amount decimal(10,2) [not null]
+  scheduled_pickup_at timestamp
+  scheduled_delivery_at timestamp
+  payment_id uuid [ref: > tenant_payments.id]
+}
+
+Table loyalty_rules {
+  id uuid [pk]
+  tenant_id uuid [ref: > tenants.id]
+  name varchar
+  description text
+  min_total_spent decimal(10,2) [note: "Customer must have spent at least this amount"]
+  discount_type enum('fixed', 'percentage')
+  discount_value decimal(10,2)
+  usage_limit int // e.g. 1 for one-time redemption
+  is_active bool [default: true]
+}
+
+Table customer_loyalty_redemptions {
+  id uuid [pk]
+  customer_id uuid [ref: > customers.id]
+  loyalty_rule_id uuid [ref: > loyalty_rules.id]
+  order_id uuid [ref: > orders.id] // the order where they used it
+  redeemed_at timestamp [default: `now()`]
+  amount decimal(10,2) // how much value they redeemed
+  notes text
+}
+
+Table order_discounts {
+  id uuid [pk]
+  order_id uuid [ref: > orders.id]
+  type enum('level', 'loyalty', 'promo')
+  reference_id uuid // points to customer_levels.id or promos.id
+  discount_amount decimal(10,2)
+  notes text
+}
+
+
+Table order_items {
+  id uuid [pk]
+  order_id uuid [ref: > orders.id]
+  service_variant_id uuid [ref: > service_variants.id]
+  quantity decimal(10,2) [not null]
+  unit_price decimal(10,2) [not null, note: "Snapshot of price at tiem of order"]
+  total_price decimal(10,2) [not null, note: "unit_price * quantity"]
+}
+
+
+Table order_status {
+  id uuid [pk]
+  order_id uuid [ref: > orders.id]
+  status enum('pending', 'scheduled', 'accepted', 'pickup', 'in_progress', 'ready_for_delivery', 'completed', 'canceled') [default: 'pending']
+  completed_at timestamp
+  notes text
+}
+
+Table promos {
+  id uuid [pk]
+  tenant_id uuid [ref: > tenants.id]
+  code varchar [not null, unique]
+  description text
+  discount_type enum('percentage', 'fixed')
+  discount_value decimal(10,2)
+  min_order_amount decimal(10,2) [default: 0]
+  max_discount_amount decimal(10,2)
+  usage_limit int
+  per_customer_limit int
+  valid_from timestamp
+  valid_until timestamp
+  is_active bool [default: true]
+}
+
+Table promo_redemptions {
+  id uuid [pk]
+  promo_id uuid [ref: > promos.id]
+  customer_id uuid [ref: > customers.id]
+  order_id uuid [ref: > orders.id]
+  redeemed_at timestamp [default: 'now()']
+}
+
+Table machines {
+  id uuid [pk]
+  tenant_id uuid [ref: > tenants.id]
+  branch_id uuid [ref: > branches.id]
+  room_id uuid [ref: > rooms.id]
+  name varchar
+  description text
+  type enum('washer', 'dryer', 'press', 'other')
+  status enum('active', 'maintenance', 'out_of_order')
+  in_use bool [default: true]
+}
+
+Table rooms {
+  id uuid [pk]
+  tenant_id uuid [ref: > tenants.id]
+  branch_id uuid [ref: > branches.id]
+  name varchar [not null]
+  floor varchar
+  description text
+}
+
+
+Table order_issues {
+  id uuid [pk]
+  order_id uuid [ref: > orders.id]
+  type enum('lost_item', 'damage', 'delay', 'other')
+  description text
+  resolution text
+  status enum('open', 'in_progress', 'resolved')
+  created_at timestamp [default: 'now()']
+}
+
+
+// PAYMENT
+Table payment_methods {
+  id uuid [pk]
+  tenant_id uuid [ref: > tenants.id, note: "null for platform"]
+  name varchar [not null]
+  description text
+  fee_type enum('fixed', 'percentage')
+  fee_amount decimal(10,2) [note: 'e.g. Rp 2,500 fixed fee or 1.5% for gateway']
+  is_active bool [default: true]
+}
+
+Table tenant_payments {
+  id uuid [pk]
+  tenant_id uuid [ref: > tenants.id, not null]
+  customer_id uuid [ref: > customers.id, not null]
+  payment_method uuid [ref: > payment_methods.id, not null]
+  amount decimal(10,2) [not null]
+  fee_amount decimal(10,2) [default: 0, note: "payment method fee snapshot"]
+  method enum('cash', 'gateway')
+  metadata jsonb
+  status enum('pending', 'paid', 'failed') [default: 'pending']
+  paid_at timestamp
+  notes text
+}
+
+Table platform_payments {
+  id uuid [pk]
+  payment_method uuid [ref: > payment_methods.id]
+  amount decimal(10,2) [not null]
+  fee_amount decimal(10,2) [default: 0, note: "payment method fee snapshot"]
+  method enum('cash', 'gateway')
+  metadata jsonb
+  status enum('pending', 'paid', 'failed') [default: 'pending']
+  source_type enum('subscription', 'topup')
+  source_id uuid [not null]
+  paid_at timestamp
+  notes text
+}
+
+// Platforms
+Table subscriptions {
+  id uuid [pk]
+  tenant_id uuid [ref: > tenants.id]
+  plan_variant_id uuid [ref: > plan_variants.id]
+  amount decimal(10,2)
+  status enum('pending', 'active', 'suspended', 'canceled')
+  start_date timestamp
+  end_date timestamp
+}
+
+Table topups {
+  id uuid [pk]
+  tenant_id uuid [ref: > tenants.id]
+  amount decimal(10,2) [not null]
+  status enum('pending', 'approved', 'rejected') [default: 'pending']
+  approved_at timestamp
+  notes text
+}
+
+Table wallets {
+  id uuid [pk]
+  tenant_id uuid [ref: > tenants.id, unique]
+  balance decimal(10,2) [default: 0]
+}
+
+Table wallet_transactions {
+  id uuid [pk]
+  wallet_id uuid [ref: > wallets.id]
+  amount decimal(10, 2) [not null]
+  balance_after decimal(10,2) [not null, note: "Wallet balance after this transaction"]
+  source_type enum('topup', 'subscription_payment') [not null]
+  source_id uuid
+  notes text
+
+  Indexes {
+    (wallet_id)
+  }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

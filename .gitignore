@@ -1,0 +1,48 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Output of `go build`
+/bin/
+/build/
+/dist/
+
+# Dependency management (keep go.mod and go.sum tracked!)
+/vendor/
+
+# Test output
+*.coverprofile
+*.test
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+*.DS_Store
+
+# Logs
+*.log
+
+# System files
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Ent codegen output (if you generate to this directory)
+/internal/ent/*
+!/internal/ent/schema
+
+# Docker and dev tools
+.air.toml
+tmp/
+.env
+__debug_bin
+
+# Ignore Wire-generated code
+**/wire_gen.go
