@@ -36,12 +36,6 @@ func (User) Edges() []ent.Edge {
 		edge.To("tenant_users", TenantUser.Type),
 		edge.To("roles", Role.Type),
 		edge.To("customer", Customer.Type),
-		// edge.To("customer_addresses", CustomerAddress.Type),
-		// edge.To("customer_spending", CustomerSpending.Type),
-		// edge.To("customer_levels", CustomerLevel.Type),
-		// edge.To("customer_level_assignments", CustomerLevelAssignment.Type),
 		edge.To("customer_ratings", CustomerRating.Type),
-		// edge.To("orders", Order.Type),
-		// edge.To("payments", Payment.Type),
 	}
 }
