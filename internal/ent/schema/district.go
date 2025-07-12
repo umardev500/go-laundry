@@ -24,5 +24,8 @@ func (District) Edges() []ent.Edge {
 		edge.From("regency", Regency.Type).
 			Ref("districts").
 			Required(),
+		edge.To("tenants", Tenant.Type),
+		edge.To("branches", Branch.Type),
+		edge.To("customer_addresses", CustomerAddress.Type),
 	}
 }

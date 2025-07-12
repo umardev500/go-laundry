@@ -312,7 +312,7 @@ Table orders {
   final_amount decimal(10,2) [not null]
   scheduled_pickup_at timestamp
   scheduled_delivery_at timestamp
-  payment_id uuid [ref: > tenant_payments.id]
+  payment_id uuid [ref: > payments.id]
 }
 
 Table loyalty_rules {
@@ -447,15 +447,19 @@ Table tenant_payments {
   notes text
 }
 
-Table platform_payments {
+Table payments {
   id uuid [pk]
   payment_method uuid [ref: > payment_methods.id]
+  tenant_id uuid [ref: > tenants.id, note: "Optional: if payment relates to a tenant"]
+  customer_id uuid [ref: > customers.id, note: "Optional: if payment relates to a customer"]
+  branch_id uuid [ref: > branches.id, note: "Optional: if payment relates to a branch"]
+
   amount decimal(10,2) [not null]
   fee_amount decimal(10,2) [default: 0, note: "payment method fee snapshot"]
   method enum('cash', 'gateway')
   metadata jsonb
   status enum('pending', 'paid', 'failed') [default: 'pending']
-  source_type enum('subscription', 'topup')
+  source_type enum('subscription', 'topup', 'service_order')
   source_id uuid [not null]
   paid_at timestamp
   notes text
@@ -474,7 +478,8 @@ Table subscriptions {
 
 Table topups {
   id uuid [pk]
-  tenant_id uuid [ref: > tenants.id]
+  tenant_id uuid [ref: > tenants.id, note: "Optional: if topup relates to a tenant"]
+  customer_id uuid [ref: > customers.id, note: "Optional: if topup relates to a customer"]
   amount decimal(10,2) [not null]
   status enum('pending', 'approved', 'rejected') [default: 'pending']
   approved_at timestamp

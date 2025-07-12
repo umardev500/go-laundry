@@ -35,5 +35,9 @@ func (PlanVariant) Edges() []ent.Edge {
 		edge.From("plan", Plan.Type).
 			Ref("variants").
 			Unique(),
+		edge.To("tenants", Tenant.Type),
+		edge.From("permissions", Permission.Type).
+			Ref("plant_variants"),
+		edge.To("subscriptions", Subscription.Type),
 	}
 }

@@ -22,5 +22,8 @@ func (Province) Fields() []ent.Field {
 func (Province) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("regencies", Regency.Type),
+		edge.To("tenants", Tenant.Type),
+		edge.To("branches", Branch.Type),
+		edge.To("customer_addresses", CustomerAddress.Type),
 	}
 }

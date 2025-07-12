@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 )
@@ -26,5 +27,21 @@ func (User) Fields() []ent.Field {
 			NotEmpty(),
 		field.Enum("type").
 			Values("platform", "tenant", "customer"),
+	}
+}
+
+func (User) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.To("tenants", Tenant.Type),
+		edge.To("tenant_users", TenantUser.Type),
+		edge.To("roles", Role.Type),
+		edge.To("customer", Customer.Type),
+		// edge.To("customer_addresses", CustomerAddress.Type),
+		// edge.To("customer_spending", CustomerSpending.Type),
+		// edge.To("customer_levels", CustomerLevel.Type),
+		// edge.To("customer_level_assignments", CustomerLevelAssignment.Type),
+		edge.To("customer_ratings", CustomerRating.Type),
+		// edge.To("orders", Order.Type),
+		// edge.To("payments", Payment.Type),
 	}
 }
