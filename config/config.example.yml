@@ -1,0 +1,14 @@
+server:
+  host: "0.0.0.0"
+  port: "8080"
+
+database:
+  driver: "postgres"
+  dsn: "host=127.0.0.1 port=5432 user=root password=root dbname=laundry sslmode=disable"
+
+firebase:
+  credentials_file: "./firebase-adminsdk.json"
+
+jwt:
+  secret: "secret"
+  expiry_seconds: 86400

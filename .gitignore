@@ -1,0 +1,48 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binaries
+*.test
+
+# Output of `go build`
+*.out
+
+# Dependency directories (vendor/)
+vendor/
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Logs
+*.log
+
+# IDE / Editor settings
+.vscode/
+.idea/
+*.swp
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+bin/
+dist/
+
+
+/ent/*
+!/ent/schema
+
+/tmp
+
+firebase-adminsdk.json
+
+/config/config.yml
+
+# wire generated
+*_gen.go
