@@ -25,6 +25,9 @@ func (Feature) Fields() []ent.Field {
 			NotEmpty().
 			Nillable(),
 
+		field.String("description").
+			Nillable(),
+
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable(),
