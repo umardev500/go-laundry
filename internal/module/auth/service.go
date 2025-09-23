@@ -61,7 +61,7 @@ func (s *serviceImpl) generateJWT(u *user.User) (tokenStr string, err error) {
 		return
 	}
 
-	signed, err := jwt.Sign(token, jwt.WithKey(jwa.RS256(), []byte(s.cfg.JWT.Secret)))
+	signed, err := jwt.Sign(token, jwt.WithKey(jwa.HS256(), []byte(s.cfg.JWT.Secret)))
 	if err != nil {
 		return
 	}
@@ -82,7 +82,7 @@ func (s *serviceImpl) generateRefreshToken(u *user.User) (tokenStr string, err e
 		return
 	}
 
-	signed, err := jwt.Sign(refreshToken, jwt.WithKey(jwa.RS256(), []byte(s.cfg.JWT.Secret)))
+	signed, err := jwt.Sign(refreshToken, jwt.WithKey(jwa.HS256(), []byte(s.cfg.JWT.Secret)))
 	if err != nil {
 		return
 	}

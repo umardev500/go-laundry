@@ -26,6 +26,7 @@ func (u *User) MapFromEnt(e *ent.User) {
 
 	u.ID = e.ID
 	u.Email = e.Email
+	u.Password = e.Password
 	u.ResetToken = e.ResetToken
 	u.ResetExpiresAt = e.ResetExpiresAt
 	u.CreatedAt = e.CreatedAt
