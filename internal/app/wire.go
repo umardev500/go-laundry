@@ -11,11 +11,20 @@ import (
 	"github.com/umardev500/go-laundry/internal/module/user"
 	"github.com/umardev500/go-laundry/internal/seed"
 	"github.com/umardev500/go-laundry/internal/types"
+	"github.com/umardev500/go-laundry/pkg/validator"
+)
+
+var AppSet = wire.NewSet(
+	db.NewEntClient,
+	validator.New,
+	user.ProviderSet,
+	auth.ProviderSet,
+	seed.ProvideSeeders,
 )
 
 func InitApp(cfg *config.Config) (*App, error) {
 	wire.Build(
-		db.NewEntClient,
+		AppSet,
 		NewFiberApp,
 		NewApp,
 	)
@@ -24,10 +33,7 @@ func InitApp(cfg *config.Config) (*App, error) {
 
 func InitSeeders(cfg *config.Config) ([]types.Seeder, error) {
 	wire.Build(
-		db.NewEntClient,
-		user.ProviderSet,
-		auth.ProviderSet,
-		seed.ProvideSeeders,
+		AppSet,
 	)
 	return nil, nil
 }

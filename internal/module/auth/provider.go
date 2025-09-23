@@ -6,4 +6,7 @@ import (
 
 var ProviderSet = wire.NewSet(
 	NewSeeder,
+	NewHandler,
+	NewServiceImpl,
+	wire.Bind(new(Service), new(*serviceImpl)),
 )

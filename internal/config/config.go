@@ -20,8 +20,10 @@ type Firebase struct {
 }
 
 type JWT struct {
-	Secret        string `mapstructure:"secret"`
-	ExpirySeconds int64  `mapstructure:"expiry_seconds"`
+	Issuer                    string `mapstructure:"issuer"`
+	Secret                    string `mapstructure:"secret"`
+	ExpirySeconds             int64  `mapstructure:"expiry_seconds"`
+	RefreshTokenExpirySeconds int64  `mapstructure:"refresh_token_expiry_seconds"`
 }
 
 type Config struct {
