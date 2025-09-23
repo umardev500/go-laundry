@@ -35,7 +35,10 @@ type UserCreate struct {
 }
 
 type UserProfileCreate struct {
-	Name string
+	Name    string
+	Avatar  *string
+	Phone   *string
+	Address *string
 }
 
 type UserProfileUpdate struct {
@@ -67,5 +70,6 @@ func (u *User) MapFromEnt(e *ent.User) {
 
 type Repository interface {
 	FindByEmail(ctx context.Context, email string) (*User, error)
-	UpsertUserProfile(ctx context.Context, userID uuid.UUID, input *UserProfileUpsert) (*UserProfile, error)
+	CreateUserProfile(ctx context.Context, u *UserProfileCreate) (*UserProfile, error)
+	UpdateUserProfile(ctx context.Context, userID uuid.UUID, u *UserProfileUpdate) (*UserProfile, error)
 }

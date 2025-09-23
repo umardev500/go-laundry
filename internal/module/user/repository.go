@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/umardev500/go-laundry/ent"
 	"github.com/umardev500/go-laundry/ent/profile"
 	userEntity "github.com/umardev500/go-laundry/ent/user"
 	"github.com/umardev500/go-laundry/internal/db"
@@ -37,26 +36,18 @@ func (r *repositoryImpl) FindByEmail(ctx context.Context, email string) (*user.U
 	return &domainUser, nil
 }
 
-func (r *repositoryImpl) UpsertUserProfile(ctx context.Context, userID uuid.UUID, input *user.UserProfileUpsert) (*user.UserProfile, error) {
+func (r *repositoryImpl) UpdateUserProfile(ctx context.Context, userID uuid.UUID, u *user.UserProfileUpdate) (*user.UserProfile, error) {
 	conn := r.client.GetConn(ctx)
-	existing, err := conn.Profile.
-		Query().
+
+	profileEntity, err := conn.Profile.Query().
 		Where(profile.HasUserWith(userEntity.IDEQ(userID))).
 		Only(ctx)
-
-	if err != nil && !ent.IsNotFound(err) {
+	if err != nil {
 		return nil, err
 	}
 
-	if existing != nil {
-		return r.updateUserProfile(ctx, existing, input.Update)
-	}
-
-	return r.createUserProfile(ctx, input.Create)
-}
-
-func (r *repositoryImpl) updateUserProfile(ctx context.Context, existing *ent.Profile, u *user.UserProfileUpdate) (*user.UserProfile, error) {
-	profile, err := existing.Update().
+	profile, err := conn.Profile.
+		UpdateOneID(profileEntity.ID).
 		SetNillableName(u.Name).
 		SetNillableAvatar(u.Avatar).
 		SetNillablePhone(u.Phone).
@@ -79,10 +70,15 @@ func (r *repositoryImpl) updateUserProfile(ctx context.Context, existing *ent.Pr
 	return &domainProfile, nil
 }
 
-func (r *repositoryImpl) createUserProfile(ctx context.Context, u *user.UserProfileCreate) (*user.UserProfile, error) {
-	profile, err := r.client.GetConn(ctx).Profile.
+func (r *repositoryImpl) CreateUserProfile(ctx context.Context, u *user.UserProfileCreate) (*user.UserProfile, error) {
+	conn := r.client.GetConn(ctx)
+
+	profile, err := conn.Profile.
 		Create().
 		SetName(u.Name).
+		SetNillableAvatar(u.Avatar).
+		SetNillablePhone(u.Phone).
+		SetNillableAddress(u.Address).
 		Save(ctx)
 
 	domainProfile := user.UserProfile{

@@ -3,6 +3,7 @@ package auth
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/umardev500/go-laundry/internal/module/auth/dto"
+	"github.com/umardev500/go-laundry/pkg/response"
 	"github.com/umardev500/go-laundry/pkg/validator"
 )
 
@@ -43,10 +44,16 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		})
 	}
 
-	c.Status(fiber.StatusOK).JSON(dto.LoginResponse{
-		Token:        token,
-		RefreshToken: refreshToken,
-	})
+	c.Status(fiber.StatusOK).JSON(
+		response.APIResponse[dto.LoginResponse]{
+			Success: true,
+			Message: "Login successful",
+			Data: dto.LoginResponse{
+				Token:        token,
+				RefreshToken: refreshToken,
+			},
+		},
+	)
 
 	return nil
 }

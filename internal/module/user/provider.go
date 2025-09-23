@@ -9,4 +9,6 @@ var ProviderSet = wire.NewSet(
 	NewSeeder,
 	NewRepositoryImpl,
 	wire.Bind(new(user.Repository), new(*repositoryImpl)),
+	NewService,
+	NewHandler,
 )
