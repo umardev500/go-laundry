@@ -18,6 +18,38 @@ type User struct {
 	UpdatedAt      time.Time  `json:"updated_at"`
 }
 
+type UserProfile struct {
+	ID      uuid.UUID `json:"id"`
+	Name    string    `json:"name"`
+	Avatar  *string   `json:"avatar,omitempty"`
+	Phone   *string   `json:"phone,omitempty"`
+	Address *string   `json:"address,omitempty"`
+	Created time.Time `json:"created_at"`
+	Updated time.Time `json:"updated_at"`
+}
+
+type UserCreate struct {
+	Email    string
+	Password string
+	TenantID *uuid.UUID
+}
+
+type UserProfileCreate struct {
+	Name string
+}
+
+type UserProfileUpdate struct {
+	Name    *string
+	Avatar  *string
+	Phone   *string
+	Address *string
+}
+
+type UserProfileUpsert struct {
+	Create *UserProfileCreate
+	Update *UserProfileUpdate
+}
+
 // MapFromEnt sets the fields of the domain User from an ent.User
 func (u *User) MapFromEnt(e *ent.User) {
 	if u == nil {
@@ -35,4 +67,5 @@ func (u *User) MapFromEnt(e *ent.User) {
 
 type Repository interface {
 	FindByEmail(ctx context.Context, email string) (*User, error)
+	UpsertUserProfile(ctx context.Context, userID uuid.UUID, input *UserProfileUpsert) (*UserProfile, error)
 }
