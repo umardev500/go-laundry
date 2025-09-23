@@ -9,31 +9,24 @@ import (
 	"github.com/google/uuid"
 )
 
-type User struct {
+// Customer represent a customer of a tenant
+type Customer struct {
 	ent.Schema
 }
 
-func (User) Fields() []ent.Field {
+// Fields of the Customer.
+func (Customer) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).
 			Default(uuid.New).
-			Immutable().
-			Unique(),
+			Immutable(),
 
-		field.String("email").
-			Unique().
-			NotEmpty(),
-
-		field.String("password").
-			Sensitive().
-			NotEmpty(),
-
-		field.String("reset_token").
-			Optional().
+		field.String("phone").
+			NotEmpty().
 			Nillable(),
 
-		field.Time("reset_expires_at").
-			Optional().
+		field.String("address").
+			NotEmpty().
 			Nillable(),
 
 		field.Time("created_at").
@@ -46,10 +39,11 @@ func (User) Fields() []ent.Field {
 	}
 }
 
-func (User) Edges() []ent.Edge {
+// Edges of the Customer.
+func (Customer) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("tenant", Tenant.Type).
-			Ref("users").
+			Ref("customers").
 			Unique(),
 	}
 }
