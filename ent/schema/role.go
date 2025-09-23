@@ -9,11 +9,13 @@ import (
 	"github.com/google/uuid"
 )
 
-type Tenant struct {
+// Role holds the schema definition for the Role entity.
+type Role struct {
 	ent.Schema
 }
 
-func (Tenant) Fields() []ent.Field {
+// Fields of the Role.
+func (Role) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).
 			Default(uuid.New).
@@ -23,8 +25,7 @@ func (Tenant) Fields() []ent.Field {
 			NotEmpty().
 			Nillable(),
 
-		field.String("address").
-			NotEmpty().
+		field.String("description").
 			Nillable(),
 
 		field.Time("created_at").
@@ -37,10 +38,14 @@ func (Tenant) Fields() []ent.Field {
 	}
 }
 
-func (Tenant) Edges() []ent.Edge {
+// Edges of the Role.
+func (Role) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.From("tenant", Tenant.Type).
+			Ref("roles").
+			Unique(),
+		edge.From("permissions", Permission.Type).
+			Ref("roles"),
 		edge.To("users", User.Type),
-		edge.To("customers", Customer.Type),
-		edge.To("roles", Role.Type),
 	}
 }

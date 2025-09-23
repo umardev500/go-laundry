@@ -9,21 +9,19 @@ import (
 	"github.com/google/uuid"
 )
 
-type Tenant struct {
+// Feature holds the schema definition for the Feature entity.
+type Feature struct {
 	ent.Schema
 }
 
-func (Tenant) Fields() []ent.Field {
+// Fields of the Feature.
+func (Feature) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).
 			Default(uuid.New).
 			Immutable(),
 
 		field.String("name").
-			NotEmpty().
-			Nillable(),
-
-		field.String("address").
 			NotEmpty().
 			Nillable(),
 
@@ -37,10 +35,9 @@ func (Tenant) Fields() []ent.Field {
 	}
 }
 
-func (Tenant) Edges() []ent.Edge {
+// Edges of the Feature.
+func (Feature) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("users", User.Type),
-		edge.To("customers", Customer.Type),
-		edge.To("roles", Role.Type),
+		edge.To("permissions", Permission.Type),
 	}
 }

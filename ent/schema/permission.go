@@ -9,11 +9,13 @@ import (
 	"github.com/google/uuid"
 )
 
-type Tenant struct {
+// Permission holds the schema definition for the Permission entity.
+type Permission struct {
 	ent.Schema
 }
 
-func (Tenant) Fields() []ent.Field {
+// Fields of the Permission.
+func (Permission) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).
 			Default(uuid.New).
@@ -21,11 +23,8 @@ func (Tenant) Fields() []ent.Field {
 
 		field.String("name").
 			NotEmpty().
-			Nillable(),
-
-		field.String("address").
-			NotEmpty().
-			Nillable(),
+			Nillable().
+			Comment("Name of the permission e.g create_order, update_order"),
 
 		field.Time("created_at").
 			Default(time.Now).
@@ -37,10 +36,12 @@ func (Tenant) Fields() []ent.Field {
 	}
 }
 
-func (Tenant) Edges() []ent.Edge {
+// Edges of the Permission.
+func (Permission) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("users", User.Type),
-		edge.To("customers", Customer.Type),
 		edge.To("roles", Role.Type),
+		edge.From("feature", Feature.Type).
+			Ref("permissions").
+			Unique(),
 	}
 }

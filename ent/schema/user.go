@@ -51,5 +51,8 @@ func (User) Edges() []ent.Edge {
 		edge.From("tenant", Tenant.Type).
 			Ref("users").
 			Unique(),
+
+		edge.From("role", Role.Type).
+			Ref("users"),
 	}
 }
