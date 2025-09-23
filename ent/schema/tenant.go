@@ -23,6 +23,14 @@ func (Tenant) Fields() []ent.Field {
 			NotEmpty().
 			Nillable(),
 
+		field.String("phone").
+			NotEmpty().
+			Nillable(),
+
+		field.String("email").
+			NotEmpty().
+			Nillable(),
+
 		field.String("address").
 			NotEmpty().
 			Nillable(),

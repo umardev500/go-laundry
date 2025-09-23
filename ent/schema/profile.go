@@ -9,30 +9,31 @@ import (
 	"github.com/google/uuid"
 )
 
-type User struct {
+// Profile holds the schema definition for the Profile entity.
+type Profile struct {
 	ent.Schema
 }
 
-func (User) Fields() []ent.Field {
+// Fields of the Profile.
+func (Profile) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).
 			Default(uuid.New).
-			Immutable().
-			Unique(),
+			Immutable(),
 
-		field.String("email").
-			Unique().
-			NotEmpty(),
+		field.String("name").
+			NotEmpty().
+			Nillable(),
 
-		field.String("password").
-			Sensitive().
-			NotEmpty(),
-
-		field.String("reset_token").
+		field.String("avatar").
 			Optional().
 			Nillable(),
 
-		field.Time("reset_expires_at").
+		field.String("phone").
+			Optional().
+			Nillable(),
+
+		field.String("address").
 			Optional().
 			Nillable(),
 
@@ -46,17 +47,11 @@ func (User) Fields() []ent.Field {
 	}
 }
 
-func (User) Edges() []ent.Edge {
+// Edges of the Profile.
+func (Profile) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("tenant", Tenant.Type).
-			Ref("users").
+		edge.From("user", User.Type).
+			Ref("profile").
 			Unique(),
-
-		edge.From("role", Role.Type).
-			Ref("users"),
-
-		edge.To("customers", Customer.Type),
-
-		edge.To("profile", Profile.Type),
 	}
 }

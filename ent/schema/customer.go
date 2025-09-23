@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Customer represent a customer of a tenant
+// Customer represent a customer detail
 type Customer struct {
 	ent.Schema
 }
@@ -21,12 +21,8 @@ func (Customer) Fields() []ent.Field {
 			Default(uuid.New).
 			Immutable(),
 
-		field.String("phone").
-			NotEmpty().
-			Nillable(),
-
-		field.String("address").
-			NotEmpty().
+		field.Float("points").
+			Default(0).
 			Nillable(),
 
 		field.Time("created_at").
@@ -43,6 +39,10 @@ func (Customer) Fields() []ent.Field {
 func (Customer) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("tenant", Tenant.Type).
+			Ref("customers").
+			Unique(),
+
+		edge.From("user", User.Type).
 			Ref("customers").
 			Unique(),
 	}
