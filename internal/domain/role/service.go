@@ -7,9 +7,6 @@ import (
 )
 
 type Service interface {
-	// SeedDefaultRoles inserts default roles for a tenant
-	SeedDefaultRoles(ctx context.Context, tenantID uuid.UUID) error
-
 	// CreateRole creates a tenant
 	CreateRole(ctx context.Context, payload *RoleCreate, tenantID *uuid.UUID) (*Role, error)
 

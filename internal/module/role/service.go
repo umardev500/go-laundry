@@ -13,45 +13,6 @@ type serviceImpl struct {
 	repo role.Repository
 }
 
-// SeedDefaultRoles implements role.Service.
-func (s *serviceImpl) SeedDefaultRoles(ctx context.Context, tenantID uuid.UUID) error {
-	defaultRoles := []role.RoleCreate{
-		{
-			Name: "admin",
-		},
-		{
-			Name: "user",
-		},
-	}
-
-	for _, role := range defaultRoles {
-		// Check if role already exist
-		r, err := s.repo.FindByName(ctx, role.Name, func() *uuid.UUID {
-			return &tenantID
-		}())
-		if err != nil && !ent.IsNotFound(err) {
-			return err
-		}
-
-		if r != nil {
-			continue // skip if role already exist
-		}
-
-		_, err = s.repo.Create(ctx, &role, func() *uuid.UUID {
-			if tenantID == uuid.Nil {
-				return nil
-			}
-
-			return &tenantID
-		}())
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // CreateRole implements role.Service.
 func (s *serviceImpl) CreateRole(ctx context.Context, payload *role.RoleCreate, tenantID *uuid.UUID) (*role.Role, error) {
 	// Check if role arelady exist for this tenant or globally
