@@ -29,7 +29,7 @@ func (s *serviceImpl) SeedDefaultRoles(ctx context.Context, tenantID uuid.UUID) 
 		r, err := s.repo.FindByName(ctx, role.Name, func() *uuid.UUID {
 			return &tenantID
 		}())
-		if err != nil {
+		if err != nil && !ent.IsNotFound(err) {
 			return err
 		}
 
@@ -38,6 +38,10 @@ func (s *serviceImpl) SeedDefaultRoles(ctx context.Context, tenantID uuid.UUID) 
 		}
 
 		_, err = s.repo.Create(ctx, &role, func() *uuid.UUID {
+			if tenantID == uuid.Nil {
+				return nil
+			}
+
 			return &tenantID
 		}())
 		if err != nil {
