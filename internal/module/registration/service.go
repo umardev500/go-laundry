@@ -55,8 +55,8 @@ func (s *service) RegisterTenant(ctx context.Context, data *registration.Registe
 			return &id
 		}()
 
-		// Create default tenant user role
-		userRole, err := s.roleService.CreateRole(ctx, &role.RoleCreate{
+		// Create default tenant role
+		tenantRole, err := s.roleService.CreateRole(ctx, &role.RoleCreate{
 			Name: "admin",
 			Description: func() *string {
 				desc := "Tenant admin"
@@ -82,8 +82,14 @@ func (s *service) RegisterTenant(ctx context.Context, data *registration.Registe
 			return err
 		}
 
+		// Assign role to user
+		err = s.roleService.AssignRoleToUser(ctx, usr.ID, tenantRole.ID)
+		if err != nil {
+			return err
+		}
+
 		// Assign default permissions to user
-		err = s.permissionService.AssignPermissionsToRole(ctx, userRole.ID, defaultPermissions)
+		err = s.permissionService.AssignPermissionsToRole(ctx, tenantRole.ID, defaultPermissions)
 		if err != nil {
 			return err
 		}

@@ -16,6 +16,23 @@ type repositoryImpl struct {
 	client *db.Client
 }
 
+// AssignRoleToUser implements role.Repository.
+func (r *repositoryImpl) AssignRoleToUser(ctx context.Context, userID uuid.UUID, roleID uuid.UUID) error {
+	conn := r.client.GetConn(ctx)
+
+	// Fetch the role
+	roleEntity, err := conn.Role.Get(ctx, roleID)
+	if err != nil {
+		return err
+	}
+
+	// Update the user -> attach role
+	return conn.User.
+		UpdateOneID(userID).
+		AddRole(roleEntity).
+		Exec(ctx)
+}
+
 // Create implements role.Repository.
 func (r *repositoryImpl) Create(ctx context.Context, payload *role.RoleCreate, tenantID *uuid.UUID) (*role.Role, error) {
 	conn := r.client.GetConn(ctx)

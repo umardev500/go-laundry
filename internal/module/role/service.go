@@ -13,6 +13,11 @@ type serviceImpl struct {
 	repo role.Repository
 }
 
+// AssignRoleToUser implements role.Service.
+func (s *serviceImpl) AssignRoleToUser(ctx context.Context, userID uuid.UUID, roleID uuid.UUID) error {
+	return s.repo.AssignRoleToUser(ctx, userID, roleID)
+}
+
 // CreateRole implements role.Service.
 func (s *serviceImpl) CreateRole(ctx context.Context, payload *role.RoleCreate, tenantID *uuid.UUID) (*role.Role, error) {
 	// Check if role arelady exist for this tenant or globally
