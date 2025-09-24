@@ -48,11 +48,6 @@ type UserProfileUpdate struct {
 	Address *string
 }
 
-type UserProfileUpsert struct {
-	Create *UserProfileCreate
-	Update *UserProfileUpdate
-}
-
 // MapFromEnt sets the fields of the domain User from an ent.User
 func (u *User) MapFromEnt(e *ent.User) {
 	if u == nil {

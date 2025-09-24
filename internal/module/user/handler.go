@@ -35,7 +35,9 @@ func (h *Handler) SetupRoutes(router fiber.Router) {
 func (h *Handler) updateProfile(c *fiber.Ctx) error {
 	var req dto.UpdateProfileRequest
 	if err := c.BodyParser(&req); err != nil {
-		return err
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "invalid request body",
+		})
 	}
 
 	if err := h.validator.Struct(&req); err != nil {
@@ -44,9 +46,13 @@ func (h *Handler) updateProfile(c *fiber.Ctx) error {
 		})
 	}
 
-	var userID = c.Locals("user_id").(uuid.UUID)
-	var profileData = req.ToUserProfileUpdate()
-	data, err := h.service.UpdateUserProfile(c.Context(), userID, profileData)
+	userID := c.Locals("user_id").(uuid.UUID)
+
+	data, err := h.service.UpdateUserProfile(
+		c.Context(),
+		userID,
+		req.ToUserProfileUpdate(),
+	)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
