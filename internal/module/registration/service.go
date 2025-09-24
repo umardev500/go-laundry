@@ -31,6 +31,7 @@ func NewService(
 
 func (s *service) RegisterTenant(ctx context.Context, data *registration.RegisterInput) (*user.User, error) {
 	err := s.client.WithTransaction(ctx, func(ctx context.Context) error {
+		// Create tenant first
 		t, err := s.tenantService.CreateTenant(ctx, data.Tenant)
 		if err != nil {
 			return err
@@ -42,6 +43,11 @@ func (s *service) RegisterTenant(ctx context.Context, data *registration.Registe
 		}()
 
 		_, err = s.userService.CreateUser(ctx, data.User)
+		if err != nil {
+			return err
+		}
+
+		_, err = s.userService.CreateProfile(ctx, data.Profile)
 		if err != nil {
 			return err
 		}
