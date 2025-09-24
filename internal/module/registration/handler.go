@@ -2,6 +2,7 @@ package registration
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/umardev500/go-laundry/internal/domain/user"
 	"github.com/umardev500/go-laundry/internal/module/registration/dto"
 	"github.com/umardev500/go-laundry/pkg/response"
 )
@@ -30,16 +31,16 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		})
 	}
 
-	_, err := h.service.RegisterTenant(c.Context(), req.ToRegisterInput())
+	usr, err := h.service.RegisterTenant(c.Context(), req.ToRegisterInput())
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	return c.JSON(response.APIResponse[any]{
+	return c.JSON(response.APIResponse[*user.User]{
 		Success: true,
 		Message: "Register successful",
-		Data:    req,
+		Data:    usr,
 	})
 }

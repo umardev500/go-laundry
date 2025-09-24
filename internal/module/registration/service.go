@@ -29,8 +29,8 @@ func NewService(
 	}
 }
 
-func (s *service) RegisterTenant(ctx context.Context, data *registration.RegisterInput) (*user.User, error) {
-	err := s.client.WithTransaction(ctx, func(ctx context.Context) error {
+func (s *service) RegisterTenant(ctx context.Context, data *registration.RegisterInput) (usr *user.User, err error) {
+	err = s.client.WithTransaction(ctx, func(ctx context.Context) error {
 		// Create tenant first
 		t, err := s.tenantService.CreateTenant(ctx, data.Tenant)
 		if err != nil {
@@ -42,12 +42,12 @@ func (s *service) RegisterTenant(ctx context.Context, data *registration.Registe
 			return &id
 		}()
 
-		u, err := s.userService.CreateUser(ctx, data.User)
+		usr, err = s.userService.CreateUser(ctx, data.User)
 		if err != nil {
 			return err
 		}
 
-		_, err = s.userService.CreateProfile(ctx, u.ID, data.Profile)
+		_, err = s.userService.CreateProfile(ctx, usr.ID, data.Profile)
 		if err != nil {
 			return err
 		}
@@ -59,5 +59,5 @@ func (s *service) RegisterTenant(ctx context.Context, data *registration.Registe
 		return nil, fmt.Errorf("failed to register tenant: %w", err)
 	}
 
-	return nil, nil
+	return
 }
