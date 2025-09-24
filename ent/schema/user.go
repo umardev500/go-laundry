@@ -21,6 +21,11 @@ func (User) Fields() []ent.Field {
 			Immutable().
 			Unique(),
 
+		field.UUID("tenant_id", uuid.UUID{}).
+			Optional().
+			Nillable().
+			Comment("Needed if user is not associated with a tenant"),
+
 		field.String("email").
 			Unique().
 			NotEmpty(),
@@ -51,6 +56,7 @@ func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("tenant", Tenant.Type).
 			Ref("users").
+			Field("tenant_id").
 			Unique(),
 
 		edge.From("role", Role.Type).

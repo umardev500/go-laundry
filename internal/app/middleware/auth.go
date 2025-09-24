@@ -5,6 +5,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/lestrrat-go/jwx/v3/jwa"
 	"github.com/lestrrat-go/jwx/v3/jwt"
+	"github.com/rs/zerolog/log"
 	"github.com/umardev500/go-laundry/internal/config"
 	"github.com/umardev500/go-laundry/pkg/httputil"
 )
@@ -47,6 +48,24 @@ func CheckAuth(cfg *config.Config) fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": err.Error(),
 			})
+		}
+
+		// Fetch tenant id
+		var tenantIDStr string
+		err = token.Get("tenant_id", &tenantIDStr)
+		if err != nil {
+			// Skip if claim does not exist
+			// Only log or ignore
+			log.Info().Msg("No tenant_id found in token")
+		} else {
+			tenantID, err := uuid.Parse(tenantIDStr)
+			if err != nil {
+				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+					"error": err.Error(),
+				})
+			}
+
+			c.Locals("tenant_id", tenantID)
 		}
 
 		c.Locals("user_id", userID)

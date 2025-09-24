@@ -51,12 +51,17 @@ func (s *serviceImpl) Login(ctx context.Context, email, password string) (user *
 }
 
 func (s *serviceImpl) generateJWT(u *user.User) (tokenStr string, err error) {
-	token, err := jwt.NewBuilder().
+	builder := jwt.NewBuilder().
 		Issuer(s.cfg.JWT.Issuer).
 		Subject(u.ID.String()).
 		IssuedAt(time.Now()).
-		Expiration(time.Now().Add(time.Second * time.Duration(s.cfg.JWT.ExpirySeconds))).
-		Build()
+		Expiration(time.Now().Add(time.Second * time.Duration(s.cfg.JWT.ExpirySeconds)))
+
+	if u.TenantID != nil {
+		builder.Claim("tenant_id", u.TenantID.String())
+	}
+
+	token, err := builder.Build()
 	if err != nil {
 		return
 	}
@@ -72,12 +77,17 @@ func (s *serviceImpl) generateJWT(u *user.User) (tokenStr string, err error) {
 }
 
 func (s *serviceImpl) generateRefreshToken(u *user.User) (tokenStr string, err error) {
-	refreshToken, err := jwt.NewBuilder().
+	builder := jwt.NewBuilder().
 		Issuer(s.cfg.JWT.Issuer).
 		Subject(u.ID.String()).
 		IssuedAt(time.Now()).
-		Expiration(time.Now().Add(time.Second * time.Duration(s.cfg.JWT.RefreshTokenExpirySeconds))).
-		Build()
+		Expiration(time.Now().Add(time.Second * time.Duration(s.cfg.JWT.ExpirySeconds)))
+
+	if u.TenantID != nil {
+		builder.Claim("tenant_id", u.TenantID.String())
+	}
+
+	refreshToken, err := builder.Build()
 	if err != nil {
 		return
 	}

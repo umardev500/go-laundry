@@ -123,6 +123,7 @@ func (r *repositoryImpl) mapFromEnt(e *ent.User, to *user.User) {
 	}
 
 	to.ID = e.ID
+	to.TenantID = e.TenantID
 	to.Email = e.Email
 	to.Password = e.Password
 	to.ResetToken = e.ResetToken

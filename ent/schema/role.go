@@ -21,11 +21,17 @@ func (Role) Fields() []ent.Field {
 			Default(uuid.New).
 			Immutable(),
 
+		field.UUID("tenant_id", uuid.UUID{}).
+			Optional().
+			Nillable().
+			Comment("Needed if user is not associated with a tenant"),
+
 		field.String("name").
 			NotEmpty().
 			Nillable(),
 
 		field.String("description").
+			Optional().
 			Nillable(),
 
 		field.Time("created_at").
@@ -43,6 +49,7 @@ func (Role) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("tenant", Tenant.Type).
 			Ref("roles").
+			Field("tenant_id").
 			Unique(),
 		edge.From("permissions", Permission.Type).
 			Ref("roles"),
