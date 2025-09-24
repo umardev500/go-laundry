@@ -78,7 +78,7 @@ func (r *repositoryImpl) FindByName(ctx context.Context, name string, tenantID *
 }
 
 // List implements role.Repository.
-func (r *repositoryImpl) List(ctx context.Context, tenantID *uuid.UUID) ([]role.Role, error) {
+func (r *repositoryImpl) List(ctx context.Context, tenantID *uuid.UUID) ([]*role.Role, error) {
 	conn := r.client.GetConn(ctx)
 
 	query := conn.Role.Query()
@@ -95,9 +95,12 @@ func (r *repositoryImpl) List(ctx context.Context, tenantID *uuid.UUID) ([]role.
 		return nil, err
 	}
 
-	roles := make([]role.Role, len(entRoles))
+	roles := make([]*role.Role, len(entRoles))
 	for i, entRole := range entRoles {
-		r.mapFromEnt(entRole, &roles[i])
+		dest := &role.Role{}
+		r.mapFromEnt(entRole, dest)
+
+		roles[i] = dest
 	}
 
 	return roles, nil

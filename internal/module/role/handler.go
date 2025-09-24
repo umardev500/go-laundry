@@ -75,5 +75,26 @@ func (h *Handler) CreateRole(c *fiber.Ctx) error {
 }
 
 func (h *Handler) ListRoles(c *fiber.Ctx) error {
-	return nil
+	// userID := c.Locals("user_id").(uuid.UUID)
+	var tenantIDPtr *uuid.UUID
+	if val := c.Locals("tenant_id"); val != nil {
+		if id, ok := val.(uuid.UUID); ok && id != uuid.Nil {
+			tenantIDPtr = func() *uuid.UUID {
+				return &id
+			}()
+		}
+	}
+
+	roles, err := h.service.ListRoles(c.Context(), tenantIDPtr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(response.APIResponse[[]*role.Role]{
+		Success: true,
+		Message: "Roles fetched successfully",
+		Data:    roles,
+	})
 }

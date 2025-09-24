@@ -49,7 +49,7 @@ func (s *serviceImpl) GetRoleByName(ctx context.Context, name string, tenantID *
 }
 
 // ListRoles implements role.Service.
-func (s *serviceImpl) ListRoles(ctx context.Context, tenantID *uuid.UUID) ([]role.Role, error) {
+func (s *serviceImpl) ListRoles(ctx context.Context, tenantID *uuid.UUID) ([]*role.Role, error) {
 	return s.repo.List(ctx, tenantID)
 }
 
