@@ -14,10 +14,10 @@ import (
 type Handler struct {
 	cfg       *config.Config
 	validator *validator.Validator
-	service   *Service
+	service   user.Service
 }
 
-func NewHandler(cfg *config.Config, v *validator.Validator, service *Service) *Handler {
+func NewHandler(cfg *config.Config, v *validator.Validator, service user.Service) *Handler {
 	return &Handler{
 		cfg:       cfg,
 		validator: v,
@@ -59,7 +59,7 @@ func (h *Handler) updateProfile(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.JSON(response.APIResponse[*user.UserProfile]{
+	return c.JSON(response.APIResponse[*user.Profile]{
 		Success: true,
 		Message: "Profile updated successfully",
 		Data:    data,

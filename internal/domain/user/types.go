@@ -1,11 +1,9 @@
 package user
 
 import (
-	"context"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/umardev500/go-laundry/ent"
 )
 
 type User struct {
@@ -18,7 +16,13 @@ type User struct {
 	UpdatedAt      time.Time  `json:"updated_at"`
 }
 
-type UserProfile struct {
+type UserCreate struct {
+	Email    string
+	Password string
+	TenantID *uuid.UUID
+}
+
+type Profile struct {
 	ID      uuid.UUID `json:"id"`
 	Name    string    `json:"name"`
 	Avatar  *string   `json:"avatar,omitempty"`
@@ -28,43 +32,16 @@ type UserProfile struct {
 	Updated time.Time `json:"updated_at"`
 }
 
-type UserCreate struct {
-	Email    string
-	Password string
-	TenantID *uuid.UUID
-}
-
-type UserProfileCreate struct {
+type ProfileCreate struct {
 	Name    string
 	Avatar  *string
 	Phone   *string
 	Address *string
 }
 
-type UserProfileUpdate struct {
+type ProfileUpdate struct {
 	Name    *string
 	Avatar  *string
 	Phone   *string
 	Address *string
-}
-
-// MapFromEnt sets the fields of the domain User from an ent.User
-func (u *User) MapFromEnt(e *ent.User) {
-	if u == nil {
-		return
-	}
-
-	u.ID = e.ID
-	u.Email = e.Email
-	u.Password = e.Password
-	u.ResetToken = e.ResetToken
-	u.ResetExpiresAt = e.ResetExpiresAt
-	u.CreatedAt = e.CreatedAt
-	u.UpdatedAt = e.UpdatedAt
-}
-
-type Repository interface {
-	FindByEmail(ctx context.Context, email string) (*User, error)
-	CreateUserProfile(ctx context.Context, u *UserProfileCreate) (*UserProfile, error)
-	UpdateUserProfile(ctx context.Context, userID uuid.UUID, u *UserProfileUpdate) (*UserProfile, error)
 }

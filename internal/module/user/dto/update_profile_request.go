@@ -9,8 +9,8 @@ type UpdateProfileRequest struct {
 	Address *string `json:"address" validate:"omitempty,min=10,max=100"`
 }
 
-func (u UpdateProfileRequest) ToUserProfileUpdate() *user.UserProfileUpdate {
-	return &user.UserProfileUpdate{
+func (u UpdateProfileRequest) ToUserProfileUpdate() *user.ProfileUpdate {
+	return &user.ProfileUpdate{
 		Name:    u.Name,
 		Avatar:  u.Avatar,
 		Phone:   u.Phone,

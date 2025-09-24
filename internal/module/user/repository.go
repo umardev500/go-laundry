@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/umardev500/go-laundry/ent"
 	"github.com/umardev500/go-laundry/ent/profile"
 	userEntity "github.com/umardev500/go-laundry/ent/user"
 	"github.com/umardev500/go-laundry/internal/db"
@@ -14,10 +15,28 @@ type repositoryImpl struct {
 	client *db.Client
 }
 
-func NewRepositoryImpl(client *db.Client) *repositoryImpl {
+func NewRepositoryImpl(client *db.Client) user.Repository {
 	return &repositoryImpl{
 		client: client,
 	}
+}
+
+func (r *repositoryImpl) CreateUser(ctx context.Context, u *user.UserCreate) (*user.User, error) {
+	conn := r.client.GetConn(ctx)
+
+	userReturned, err := conn.User.
+		Create().
+		SetEmail(u.Email).
+		SetPassword(u.Password).
+		SetNillableTenantID(u.TenantID).
+		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var result user.User
+	r.mapFromEnt(userReturned, &result)
+	return &result, nil
 }
 
 func (r *repositoryImpl) FindByEmail(ctx context.Context, email string) (*user.User, error) {
@@ -31,12 +50,12 @@ func (r *repositoryImpl) FindByEmail(ctx context.Context, email string) (*user.U
 	}
 
 	var domainUser user.User
-	domainUser.MapFromEnt(u)
+	r.mapFromEnt(u, &domainUser)
 
 	return &domainUser, nil
 }
 
-func (r *repositoryImpl) UpdateUserProfile(ctx context.Context, userID uuid.UUID, u *user.UserProfileUpdate) (*user.UserProfile, error) {
+func (r *repositoryImpl) UpdateUserProfile(ctx context.Context, userID uuid.UUID, u *user.ProfileUpdate) (*user.Profile, error) {
 	conn := r.client.GetConn(ctx)
 
 	profileEntity, err := conn.Profile.Query().
@@ -57,7 +76,7 @@ func (r *repositoryImpl) UpdateUserProfile(ctx context.Context, userID uuid.UUID
 		return nil, err
 	}
 
-	domainProfile := user.UserProfile{
+	domainProfile := user.Profile{
 		ID:      profile.ID,
 		Name:    *profile.Name,
 		Avatar:  profile.Avatar,
@@ -70,7 +89,7 @@ func (r *repositoryImpl) UpdateUserProfile(ctx context.Context, userID uuid.UUID
 	return &domainProfile, nil
 }
 
-func (r *repositoryImpl) CreateUserProfile(ctx context.Context, u *user.UserProfileCreate) (*user.UserProfile, error) {
+func (r *repositoryImpl) CreateUserProfile(ctx context.Context, u *user.ProfileCreate) (*user.Profile, error) {
 	conn := r.client.GetConn(ctx)
 
 	profile, err := conn.Profile.
@@ -81,7 +100,7 @@ func (r *repositoryImpl) CreateUserProfile(ctx context.Context, u *user.UserProf
 		SetNillableAddress(u.Address).
 		Save(ctx)
 
-	domainProfile := user.UserProfile{
+	domainProfile := user.Profile{
 		ID:      profile.ID,
 		Name:    *profile.Name,
 		Avatar:  profile.Avatar,
@@ -92,4 +111,18 @@ func (r *repositoryImpl) CreateUserProfile(ctx context.Context, u *user.UserProf
 	}
 
 	return &domainProfile, err
+}
+
+func (r *repositoryImpl) mapFromEnt(e *ent.User, to *user.User) {
+	if to == nil {
+		return
+	}
+
+	to.ID = e.ID
+	to.Email = e.Email
+	to.Password = e.Password
+	to.ResetToken = e.ResetToken
+	to.ResetExpiresAt = e.ResetExpiresAt
+	to.CreatedAt = e.CreatedAt
+	to.UpdatedAt = e.UpdatedAt
 }
