@@ -89,16 +89,20 @@ func (r *repositoryImpl) UpdateUserProfile(ctx context.Context, userID uuid.UUID
 	return &domainProfile, nil
 }
 
-func (r *repositoryImpl) CreateUserProfile(ctx context.Context, u *user.ProfileCreate) (*user.Profile, error) {
+func (r *repositoryImpl) CreateUserProfile(ctx context.Context, userID uuid.UUID, u *user.ProfileCreate) (*user.Profile, error) {
 	conn := r.client.GetConn(ctx)
 
 	profile, err := conn.Profile.
 		Create().
+		SetUserID(userID).
 		SetName(u.Name).
 		SetNillableAvatar(u.Avatar).
 		SetNillablePhone(u.Phone).
 		SetNillableAddress(u.Address).
 		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	domainProfile := user.Profile{
 		ID:      profile.ID,

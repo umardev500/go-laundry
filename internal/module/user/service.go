@@ -19,8 +19,8 @@ func NewService(repo user.Repository) user.Service {
 }
 
 // CreateProfile implements user.Service.
-func (s *serviceImpl) CreateProfile(ctx context.Context, u *user.ProfileCreate) (*user.Profile, error) {
-	return s.repo.CreateUserProfile(ctx, u)
+func (s *serviceImpl) CreateProfile(ctx context.Context, userID uuid.UUID, u *user.ProfileCreate) (*user.Profile, error) {
+	return s.repo.CreateUserProfile(ctx, userID, u)
 }
 
 func (s *serviceImpl) CreateUser(ctx context.Context, u *user.UserCreate) (*user.User, error) {

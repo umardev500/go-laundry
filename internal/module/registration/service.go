@@ -42,12 +42,12 @@ func (s *service) RegisterTenant(ctx context.Context, data *registration.Registe
 			return &id
 		}()
 
-		_, err = s.userService.CreateUser(ctx, data.User)
+		u, err := s.userService.CreateUser(ctx, data.User)
 		if err != nil {
 			return err
 		}
 
-		_, err = s.userService.CreateProfile(ctx, data.Profile)
+		_, err = s.userService.CreateProfile(ctx, u.ID, data.Profile)
 		if err != nil {
 			return err
 		}

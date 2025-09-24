@@ -50,23 +50,23 @@ func (s *Seeder) Seed(ctx context.Context) error {
 			return fmt.Errorf("failed to hash password for %s: %w", u.Email, err)
 		}
 
-		// Create profile
-		profileEntity, err := client.Profile.Create().
-			SetName(u.Name).
-			Save(ctx)
-		if err != nil {
-			return err
-		}
-
 		// Create user and profile together
-		_, err = client.User.Create().
+		userEntity, err := client.User.Create().
 			SetID(u.ID).
 			SetEmail(u.Email).
 			SetPassword(string(hashed)).
-			AddProfile(profileEntity).
 			Save(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to create user %s with profile: %w", u.Email, err)
+		}
+
+		// Create profile
+		_, err = client.Profile.Create().
+			SetName(u.Name).
+			SetUser(userEntity).
+			Save(ctx)
+		if err != nil {
+			return err
 		}
 	}
 
