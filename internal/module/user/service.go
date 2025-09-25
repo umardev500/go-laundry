@@ -12,6 +12,34 @@ type serviceImpl struct {
 	repo user.Repository
 }
 
+// FindByEmail implements user.Service.
+func (s *serviceImpl) FindByEmail(ctx context.Context, email string) (*user.User, error) {
+	return s.repo.FindByEmail(ctx, email)
+}
+
+// FindByToken implements user.Service.
+func (s *serviceImpl) FindByToken(ctx context.Context, token string) (*user.User, error) {
+	return s.repo.FindByToken(ctx, token)
+}
+
+// Update implements user.Service.
+func (s *serviceImpl) Update(ctx context.Context, userID uuid.UUID, payload *user.UserUpdate, tenantID *uuid.UUID) (*user.User, error) {
+	// Hash password if provided
+	if payload.Password != nil {
+		hashed, err := bcrypt.GenerateFromPassword([]byte(*payload.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, err
+		}
+
+		hashedStr := string(hashed)
+
+		payload.Password = &hashedStr
+	}
+
+	// Delegate to repository, passing tenantID for scoping
+	return s.repo.Update(ctx, payload, userID, tenantID)
+}
+
 // List implements user.Service.
 func (s *serviceImpl) List(ctx context.Context, filter user.UserFilter) ([]*user.User, error) {
 	// Apply defaults

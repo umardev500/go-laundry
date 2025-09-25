@@ -18,6 +18,64 @@ type repositoryImpl struct {
 	client *db.Client
 }
 
+// FindByToken implements user.Repository.
+func (r *repositoryImpl) FindByToken(ctx context.Context, token string) (*user.User, error) {
+	conn := r.client.GetConn(ctx)
+
+	userEnt, err := conn.User.
+		Query().
+		Where(userEntity.ResetTokenEQ(token)).
+		Only(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var domainUser user.User
+	r.mapFromEnt(userEnt, &domainUser)
+
+	return &domainUser, nil
+}
+
+// Update implements user.Repository.
+func (r *repositoryImpl) Update(ctx context.Context, payload *user.UserUpdate, userID uuid.UUID, tenantID *uuid.UUID) (*user.User, error) {
+	conn := r.client.GetConn(ctx)
+
+	// Fetch the user first
+	u, err := conn.User.Get(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Tenant scoping check
+	if tenantID != nil {
+		if u.TenantID != nil && *tenantID != *u.TenantID {
+			return nil, fmt.Errorf("permission denied: cannot update user outside your tenant")
+		}
+	}
+
+	// Prevent update if soft-deleted
+	if u.DeletedAt != nil {
+		return nil, fmt.Errorf("cannot update a deleted user")
+	}
+
+	// Start update builder
+	userEnt, err := conn.User.UpdateOne(u).
+		SetNillableEmail(payload.Email).
+		SetNillablePassword(payload.Password).
+		SetNillableResetToken(payload.ResetToken).
+		SetNillableResetExpiresAt(payload.ResetExpiresAt).
+		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Mpa to domain user
+	var domainUser user.User
+	r.mapFromEnt(userEnt, &domainUser)
+
+	return &domainUser, nil
+}
+
 func NewRepositoryImpl(client *db.Client) user.Repository {
 	return &repositoryImpl{
 		client: client,

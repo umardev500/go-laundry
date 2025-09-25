@@ -23,6 +23,13 @@ type UserCreate struct {
 	TenantID *uuid.UUID
 }
 
+type UserUpdate struct {
+	Email          *string
+	Password       *string
+	ResetToken     *string
+	ResetExpiresAt *time.Time
+}
+
 type UserOrderBy string
 
 const (

@@ -26,6 +26,10 @@ type Repository interface {
 	// Soft-deleted users are excluded
 	FindByEmail(ctx context.Context, email string) (*User, error)
 
+	// FindByToken retrieve a non-deleted user by token
+	// Soft-deleted users are excluded
+	FindByToken(ctx context.Context, token string) (*User, error)
+
 	// list retrieves users based on the filter criteria
 	List(ctx context.Context, filter UserFilter) ([]*User, error)
 
@@ -37,6 +41,20 @@ type Repository interface {
 	// If tenantID is nil (platform user), the purge is unrestricted.
 	// and can be applied across all tenants.
 	PurgeUser(ctx context.Context, tenantID *uuid.UUID, userID uuid.UUID) error
+
+	// Update modifies a user's credentials (email and/or password).
+	//
+	// - payload: contains optional fields to update; only non-nil fields will be changed.
+	// - userID: identifies the user to update.
+	// - tenantID: if not nil, the update is scoped to the tenant. Tenant admin can only update users
+	//   within their own tenant. Platform admins can pass nil to update any user.
+	//
+	//
+	// Behavior:
+	// - Only non-nil fields in payload are updated (partial update).
+	// - If the user is soft-deleted, the update will fail and return an error.
+	// - Returns the updated user on success
+	Update(ctx context.Context, payload *UserUpdate, userID uuid.UUID, tenantID *uuid.UUID) (*User, error)
 
 	// UpdateProfile updated an existing profile for the give user.
 	UpdateProfile(ctx context.Context, userID uuid.UUID, u *ProfileUpdate) (*Profile, error)
