@@ -50,10 +50,12 @@ func (s *service) RegisterTenant(ctx context.Context, data *registration.Registe
 			return err
 		}
 
-		data.User.TenantID = func() *uuid.UUID {
+		tenantIDPtr := func() *uuid.UUID {
 			id := t.ID
 			return &id
 		}()
+
+		data.User.TenantID = tenantIDPtr
 
 		// Create default tenant role
 		tenantRole, err := s.roleService.CreateRole(ctx, &role.RoleCreate{
@@ -83,7 +85,7 @@ func (s *service) RegisterTenant(ctx context.Context, data *registration.Registe
 		}
 
 		// Assign role to user
-		err = s.roleService.AssignRoleToUser(ctx, usr.ID, tenantRole.ID)
+		err = s.roleService.AssignRoleToUser(ctx, tenantIDPtr, usr.ID, tenantRole.ID)
 		if err != nil {
 			return err
 		}

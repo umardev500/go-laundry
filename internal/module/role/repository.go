@@ -8,6 +8,7 @@ import (
 	"github.com/umardev500/go-laundry/ent"
 	roleEntity "github.com/umardev500/go-laundry/ent/role"
 	"github.com/umardev500/go-laundry/ent/tenant"
+	userEntity "github.com/umardev500/go-laundry/ent/user"
 	"github.com/umardev500/go-laundry/internal/db"
 	"github.com/umardev500/go-laundry/internal/domain/role"
 )
@@ -17,19 +18,40 @@ type repositoryImpl struct {
 }
 
 // AssignRoleToUser implements role.Repository.
-func (r *repositoryImpl) AssignRoleToUser(ctx context.Context, userID uuid.UUID, roleID uuid.UUID) error {
+func (r *repositoryImpl) AssignRoleToUser(ctx context.Context, tenantID *uuid.UUID, userID uuid.UUID, roleID uuid.UUID) error {
 	conn := r.client.GetConn(ctx)
 
-	// Fetch the role
-	roleEntity, err := conn.Role.Get(ctx, roleID)
+	userQuery := conn.User.
+		Query().
+		Where(userEntity.IDEQ(userID))
+
+	roleQuery := conn.Role.
+		Query().
+		Where(roleEntity.IDEQ(roleID))
+
+	// If tenantID is not nil, enforce tenant scoping
+	if tenantID != nil {
+		userQuery = userQuery.
+			Where(userEntity.TenantIDEQ(*tenantID))
+
+		roleQuery = roleQuery.
+			Where(roleEntity.TenantIDEQ(*tenantID))
+	}
+
+	userEnt, err := userQuery.Only(ctx)
+	if err != nil {
+		return err
+	}
+
+	roleEnt, err := roleQuery.Only(ctx)
 	if err != nil {
 		return err
 	}
 
 	// Update the user -> attach role
 	return conn.User.
-		UpdateOneID(userID).
-		AddRole(roleEntity).
+		UpdateOne(userEnt).
+		AddRole(roleEnt).
 		Exec(ctx)
 }
 

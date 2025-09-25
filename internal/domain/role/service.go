@@ -8,7 +8,7 @@ import (
 
 type Service interface {
 	// AssignRoleToUser assigns a role to a user
-	AssignRoleToUser(ctx context.Context, userID, roleID uuid.UUID) error
+	AssignRoleToUser(ctx context.Context, tenantID *uuid.UUID, userID, roleID uuid.UUID) error
 
 	// CreateRole creates a tenant
 	CreateRole(ctx context.Context, payload *RoleCreate, tenantID *uuid.UUID) (*Role, error)

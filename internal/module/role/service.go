@@ -14,8 +14,8 @@ type serviceImpl struct {
 }
 
 // AssignRoleToUser implements role.Service.
-func (s *serviceImpl) AssignRoleToUser(ctx context.Context, userID uuid.UUID, roleID uuid.UUID) error {
-	return s.repo.AssignRoleToUser(ctx, userID, roleID)
+func (s *serviceImpl) AssignRoleToUser(ctx context.Context, tenantID *uuid.UUID, userID uuid.UUID, roleID uuid.UUID) error {
+	return s.repo.AssignRoleToUser(ctx, tenantID, userID, roleID)
 }
 
 // CreateRole implements role.Service.
