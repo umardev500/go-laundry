@@ -7,6 +7,7 @@ import (
 	"github.com/umardev500/go-laundry/internal/config"
 	"github.com/umardev500/go-laundry/internal/domain/user"
 	"github.com/umardev500/go-laundry/internal/module/user/dto"
+	"github.com/umardev500/go-laundry/internal/utils/fiberutils"
 	"github.com/umardev500/go-laundry/pkg/response"
 	"github.com/umardev500/go-laundry/pkg/validator"
 )
@@ -26,10 +27,141 @@ func NewHandler(cfg *config.Config, v *validator.Validator, service user.Service
 }
 
 func (h *Handler) SetupRoutes(router fiber.Router) {
-	r := router.Group("/user")
+	r := router.Group("/users")
 
 	r.Use(middleware.CheckAuth(h.cfg))
+	r.Get("/", h.list)
+	r.Post("/", h.createUser)
 	r.Put("/profile", h.updateProfile)
+	r.Delete("/:id", h.softDelete)
+	r.Delete("/:id/purge", h.purge)
+}
+
+func (h *Handler) createUser(c *fiber.Ctx) error {
+	var req dto.CreateUserRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "invalid request body",
+		})
+	}
+
+	if err := h.validator.Struct(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	var tenantIDPtr *uuid.UUID
+	if val := c.Locals("tenant_id"); val != nil {
+		if id, ok := val.(uuid.UUID); ok && id != uuid.Nil {
+			tenantIDPtr = func() *uuid.UUID {
+				return &id
+			}()
+		}
+	}
+
+	data, err := h.service.Create(c.Context(), req.ToUserCreate(tenantIDPtr))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(response.APIResponse[*user.User]{
+		Success: true,
+		Message: "User created successfully",
+		Data:    data,
+	})
+}
+
+func (h *Handler) softDelete(c *fiber.Ctx) error {
+	userID, ok := fiberutils.GetUUIDParamOrAPIError(c, "id")
+	if !ok {
+		return nil // helper already wrote the response
+	}
+
+	tenantIDPtr := fiberutils.GetTenantIDfromCtx(c)
+
+	err := h.service.Delete(c.Context(), tenantIDPtr, userID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(response.APIResponse[*user.User]{
+		Success: true,
+		Message: "User deleted successfully",
+	})
+}
+
+func (h *Handler) list(c *fiber.Ctx) error {
+	tenantIDPtr := fiberutils.GetTenantIDfromCtx(c)
+
+	// Parse query params
+	limit := c.QueryInt("limit", 10)
+	offset := c.QueryInt("offset", 0)
+	query := c.Query("query", "")
+	order := c.Query("order_by", "created_at desc")
+	includeDeleted := c.QueryBool("include_deleted", false)
+
+	// Map query string to UserOrderBy type
+	var orderBy user.UserOrderBy
+	switch order {
+	case "email_asc":
+		orderBy = user.OrderByEmailAsc
+	case "email_desc":
+		orderBy = user.OrderByEmailDesc
+	case "created_at_asc":
+		orderBy = user.OrderByCreatedAtAsc
+	default:
+		orderBy = user.OrderByCreatedAtDesc
+	}
+
+	// Map query string to UserFilter
+	filter := user.UserFilter{
+		TenantID:       tenantIDPtr,
+		Query:          query,
+		Limit:          limit,
+		Offset:         offset,
+		OrderBy:        orderBy,
+		IncludeDeleted: includeDeleted,
+	}.WithDefaults()
+
+	users, err := h.service.List(c.Context(), filter)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(&response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
+
+	return c.JSON(response.APIResponse[[]*user.User]{
+		Success: true,
+		Message: "Users fetched successfully",
+		Data:    users,
+	})
+}
+
+func (h *Handler) purge(c *fiber.Ctx) error {
+	userID, ok := fiberutils.GetUUIDParamOrAPIError(c, "id")
+	if !ok {
+		return nil // helper already wrote the response
+	}
+
+	tenantIDPtr := fiberutils.GetTenantIDfromCtx(c)
+
+	err := h.service.Purge(c.Context(), tenantIDPtr, userID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(response.APIResponse[*user.User]{
+		Success: true,
+		Message: "User purged successfully",
+	})
 }
 
 func (h *Handler) updateProfile(c *fiber.Ctx) error {
@@ -48,7 +180,7 @@ func (h *Handler) updateProfile(c *fiber.Ctx) error {
 
 	userID := c.Locals("user_id").(uuid.UUID)
 
-	data, err := h.service.UpdateUserProfile(
+	data, err := h.service.UpdateProfile(
 		c.Context(),
 		userID,
 		req.ToUserProfileUpdate(),

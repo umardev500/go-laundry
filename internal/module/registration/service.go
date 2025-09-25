@@ -73,7 +73,7 @@ func (s *service) RegisterTenant(ctx context.Context, data *registration.Registe
 		}
 
 		// Create user
-		usr, err = s.userService.CreateUser(ctx, data.User)
+		usr, err = s.userService.Create(ctx, data.User)
 		if err != nil {
 			return err
 		}

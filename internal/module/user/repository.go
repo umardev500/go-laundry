@@ -2,10 +2,13 @@ package user
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/ent"
 	"github.com/umardev500/go-laundry/ent/profile"
+	"github.com/umardev500/go-laundry/ent/tenant"
 	userEntity "github.com/umardev500/go-laundry/ent/user"
 	"github.com/umardev500/go-laundry/internal/db"
 	"github.com/umardev500/go-laundry/internal/domain/user"
@@ -21,7 +24,7 @@ func NewRepositoryImpl(client *db.Client) user.Repository {
 	}
 }
 
-func (r *repositoryImpl) CreateUser(ctx context.Context, u *user.UserCreate) (*user.User, error) {
+func (r *repositoryImpl) Create(ctx context.Context, u *user.UserCreate) (*user.User, error) {
 	conn := r.client.GetConn(ctx)
 
 	userReturned, err := conn.User.
@@ -39,11 +42,60 @@ func (r *repositoryImpl) CreateUser(ctx context.Context, u *user.UserCreate) (*u
 	return &result, nil
 }
 
+func (r *repositoryImpl) CreateProfile(ctx context.Context, userID uuid.UUID, u *user.ProfileCreate) (*user.Profile, error) {
+	conn := r.client.GetConn(ctx)
+
+	profile, err := conn.Profile.
+		Create().
+		SetUserID(userID).
+		SetName(u.Name).
+		SetNillableAvatar(u.Avatar).
+		SetNillablePhone(u.Phone).
+		SetNillableAddress(u.Address).
+		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	domainProfile := user.Profile{
+		ID:      profile.ID,
+		Name:    *profile.Name,
+		Avatar:  profile.Avatar,
+		Phone:   profile.Phone,
+		Address: profile.Address,
+		Created: profile.CreatedAt,
+		Updated: profile.UpdatedAt,
+	}
+
+	return &domainProfile, err
+}
+
+func (r *repositoryImpl) Delete(ctx context.Context, tenantID *uuid.UUID, userID uuid.UUID) error {
+	conn := r.client.GetConn(ctx)
+
+	q := conn.User.
+		Update().
+		Where(userEntity.IDEQ(userID))
+
+	if tenantID != nil {
+		q = q.Where(userEntity.TenantIDEQ(*tenantID))
+	}
+
+	// Soft delete
+	_, err := q.SetDeletedAt(time.Now()).Save(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to soft delete user: %w", err)
+	}
+
+	return nil
+}
+
 func (r *repositoryImpl) FindByEmail(ctx context.Context, email string) (*user.User, error) {
 	conn := r.client.GetConn(ctx)
 	u, err := conn.User.
 		Query().
 		Where(userEntity.EmailEQ(email)).
+		Where(userEntity.DeletedAtIsNil()).
 		Only(ctx)
 	if err != nil {
 		return nil, err
@@ -55,7 +107,81 @@ func (r *repositoryImpl) FindByEmail(ctx context.Context, email string) (*user.U
 	return &domainUser, nil
 }
 
-func (r *repositoryImpl) UpdateUserProfile(ctx context.Context, userID uuid.UUID, u *user.ProfileUpdate) (*user.Profile, error) {
+// List implements user.Repository.
+func (r *repositoryImpl) List(ctx context.Context, filter user.UserFilter) ([]*user.User, error) {
+	conn := r.client.GetConn(ctx)
+
+	// Start building query
+	q := conn.User.Query()
+
+	// Tenant scoping
+	if filter.TenantID != nil {
+		q = q.Where(userEntity.HasTenantWith(tenant.IDEQ(*filter.TenantID)))
+	}
+
+	// Soft delete filter
+	if !filter.IncludeDeleted {
+		q = q.Where(userEntity.DeletedAtIsNil())
+	}
+
+	// Serach by email or name
+	if filter.Query != "" {
+		q = q.Where(
+			userEntity.Or(
+				userEntity.EmailContainsFold(filter.Query),
+				userEntity.HasProfileWith(profile.NameContainsFold(filter.Query)),
+			),
+		)
+	}
+
+	// Ordering
+	switch filter.OrderBy {
+	case user.OrderByEmailAsc:
+		q = q.Order(ent.Asc(userEntity.FieldEmail))
+	case user.OrderByEmailDesc:
+		q = q.Order(ent.Desc(userEntity.FieldEmail))
+	case user.OrderByCreatedAtAsc:
+		q = q.Order(ent.Asc(userEntity.FieldCreatedAt))
+	case user.OrderByCreatedAtDesc:
+		q = q.Order(ent.Desc(userEntity.FieldCreatedAt))
+	default:
+		// default ordering
+		q = q.Order(ent.Desc(userEntity.FieldCreatedAt))
+	}
+
+	// Pagination
+	q = q.Limit(filter.Limit).Offset(filter.Offset)
+
+	usersEnt, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	domainUsers := r.mapFromEnts(usersEnt)
+
+	return domainUsers, nil
+}
+
+// PurgeUser implements user.Repository.
+func (r *repositoryImpl) PurgeUser(ctx context.Context, tenantID *uuid.UUID, userID uuid.UUID) error {
+	conn := r.client.GetConn(ctx)
+
+	q := conn.User.
+		Delete().
+		Where(userEntity.IDEQ(userID))
+
+	if tenantID != nil {
+		q = q.Where(userEntity.TenantIDEQ(*tenantID))
+	}
+
+	if _, err := q.Exec(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *repositoryImpl) UpdateProfile(ctx context.Context, userID uuid.UUID, u *user.ProfileUpdate) (*user.Profile, error) {
 	conn := r.client.GetConn(ctx)
 
 	profileEntity, err := conn.Profile.Query().
@@ -89,34 +215,6 @@ func (r *repositoryImpl) UpdateUserProfile(ctx context.Context, userID uuid.UUID
 	return &domainProfile, nil
 }
 
-func (r *repositoryImpl) CreateUserProfile(ctx context.Context, userID uuid.UUID, u *user.ProfileCreate) (*user.Profile, error) {
-	conn := r.client.GetConn(ctx)
-
-	profile, err := conn.Profile.
-		Create().
-		SetUserID(userID).
-		SetName(u.Name).
-		SetNillableAvatar(u.Avatar).
-		SetNillablePhone(u.Phone).
-		SetNillableAddress(u.Address).
-		Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	domainProfile := user.Profile{
-		ID:      profile.ID,
-		Name:    *profile.Name,
-		Avatar:  profile.Avatar,
-		Phone:   profile.Phone,
-		Address: profile.Address,
-		Created: profile.CreatedAt,
-		Updated: profile.UpdatedAt,
-	}
-
-	return &domainProfile, err
-}
-
 func (r *repositoryImpl) mapFromEnt(e *ent.User, to *user.User) {
 	if to == nil {
 		return
@@ -130,4 +228,17 @@ func (r *repositoryImpl) mapFromEnt(e *ent.User, to *user.User) {
 	to.ResetExpiresAt = e.ResetExpiresAt
 	to.CreatedAt = e.CreatedAt
 	to.UpdatedAt = e.UpdatedAt
+}
+
+func (r *repositoryImpl) mapFromEnts(es []*ent.User) []*user.User {
+	domainUsers := make([]*user.User, len(es))
+
+	for i, e := range es {
+		u := &user.User{}
+		r.mapFromEnt(e, u)
+
+		domainUsers[i] = u
+	}
+
+	return domainUsers
 }

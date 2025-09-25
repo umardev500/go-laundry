@@ -12,6 +12,15 @@ type serviceImpl struct {
 	repo user.Repository
 }
 
+// List implements user.Service.
+func (s *serviceImpl) List(ctx context.Context, filter user.UserFilter) ([]*user.User, error) {
+	// Apply defaults
+	filter = filter.WithDefaults()
+
+	// Deletegate to repository
+	return s.repo.List(ctx, filter)
+}
+
 func NewService(repo user.Repository) user.Service {
 	return &serviceImpl{
 		repo: repo,
@@ -20,10 +29,10 @@ func NewService(repo user.Repository) user.Service {
 
 // CreateProfile implements user.Service.
 func (s *serviceImpl) CreateProfile(ctx context.Context, userID uuid.UUID, u *user.ProfileCreate) (*user.Profile, error) {
-	return s.repo.CreateUserProfile(ctx, userID, u)
+	return s.repo.CreateProfile(ctx, userID, u)
 }
 
-func (s *serviceImpl) CreateUser(ctx context.Context, u *user.UserCreate) (*user.User, error) {
+func (s *serviceImpl) Create(ctx context.Context, u *user.UserCreate) (*user.User, error) {
 	// Hash password
 	hashBytes, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -31,9 +40,19 @@ func (s *serviceImpl) CreateUser(ctx context.Context, u *user.UserCreate) (*user
 	}
 	u.Password = string(hashBytes)
 
-	return s.repo.CreateUser(ctx, u)
+	return s.repo.Create(ctx, u)
 }
 
-func (s *serviceImpl) UpdateUserProfile(ctx context.Context, userID uuid.UUID, u *user.ProfileUpdate) (*user.Profile, error) {
-	return s.repo.UpdateUserProfile(ctx, userID, u)
+// Delete implements user.Service.
+func (s *serviceImpl) Delete(ctx context.Context, tenantID *uuid.UUID, userID uuid.UUID) error {
+	return s.repo.Delete(ctx, tenantID, userID)
+}
+
+// Purge implements user.Service.
+func (s *serviceImpl) Purge(ctx context.Context, tenantID *uuid.UUID, userID uuid.UUID) error {
+	return s.repo.PurgeUser(ctx, tenantID, userID)
+}
+
+func (s *serviceImpl) UpdateProfile(ctx context.Context, userID uuid.UUID, u *user.ProfileUpdate) (*user.Profile, error) {
+	return s.repo.UpdateProfile(ctx, userID, u)
 }
