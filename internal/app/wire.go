@@ -10,8 +10,10 @@ import (
 	"github.com/umardev500/go-laundry/internal/module/auth"
 	"github.com/umardev500/go-laundry/internal/module/feature"
 	"github.com/umardev500/go-laundry/internal/module/permission"
+	"github.com/umardev500/go-laundry/internal/module/plan"
 	"github.com/umardev500/go-laundry/internal/module/registration"
 	"github.com/umardev500/go-laundry/internal/module/role"
+	"github.com/umardev500/go-laundry/internal/module/subscription"
 	"github.com/umardev500/go-laundry/internal/module/tenant"
 	"github.com/umardev500/go-laundry/internal/module/user"
 	"github.com/umardev500/go-laundry/internal/seed"
@@ -29,8 +31,10 @@ var AppSet = wire.NewSet(
 	registration.ProviderSet,
 	tenant.ProviderSet,
 	role.ProviderSet,
+	plan.ProviderSet,
 	permission.ProviderSet,
 	email.NewClient,
+	subscription.ProviderSet,
 	seed.ProvideSeeders,
 )
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -31,6 +32,8 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialize seeders")
 	}
+
+	fmt.Println(seeders)
 
 	if err := seed.Run(context.Background(), seeders); err != nil {
 		log.Fatal().Err(err).Msg("Failed to seed database")

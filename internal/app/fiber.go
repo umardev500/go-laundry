@@ -5,6 +5,7 @@ import (
 	"github.com/umardev500/go-laundry/internal/module/auth"
 	"github.com/umardev500/go-laundry/internal/module/registration"
 	"github.com/umardev500/go-laundry/internal/module/role"
+	"github.com/umardev500/go-laundry/internal/module/subscription"
 	"github.com/umardev500/go-laundry/internal/module/user"
 )
 
@@ -13,6 +14,7 @@ func NewFiberApp(
 	userHandler *user.Handler,
 	registrationHandler *registration.Handler,
 	roleHandler *role.Handler,
+	subscriptionHandler *subscription.Handler,
 ) *fiber.App {
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
@@ -24,6 +26,7 @@ func NewFiberApp(
 	userHandler.SetupRoutes(api)
 	registrationHandler.SetupRoutes(api)
 	roleHandler.SetupRoutes(api)
+	subscriptionHandler.SetupRoutes(api)
 
 	return app
 }

@@ -31,7 +31,7 @@ new:
 # Generate code from schema
 generate:
 	@echo "⚙️  Generating Ent code..."
-	@go run -mod=mod entgo.io/ent/cmd/ent generate $(SCHEMA_DIR)
+	@go run -mod=mod entgo.io/ent/cmd/ent generate $(SCHEMA_DIR) --feature sql/upsert
 
 # Run migrations (optional)
 migrate:

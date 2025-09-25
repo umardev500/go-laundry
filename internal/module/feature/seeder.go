@@ -2,6 +2,7 @@ package feature
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/umardev500/go-laundry/internal/db"
 )
@@ -18,6 +19,8 @@ func NewSeeder(client *db.Client) *Seeder {
 
 func (s *Seeder) Seed(ctx context.Context) error {
 	var client = s.client.Client
+
+	fmt.Println("seeding features...")
 
 	features := []struct {
 		Name        string

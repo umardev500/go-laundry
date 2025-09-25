@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/umardev500/go-laundry/internal/db"
 )
@@ -17,5 +18,6 @@ func NewSeeder(client *db.Client) *Seeder {
 }
 
 func (s *Seeder) Seed(ctx context.Context) error {
+	fmt.Println("seeding auth...")
 	return nil
 }

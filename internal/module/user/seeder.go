@@ -23,6 +23,8 @@ func NewSeeder(client *db.Client) *Seeder {
 func (s *Seeder) Seed(ctx context.Context) error {
 	client := s.client.Client
 
+	fmt.Println("seeding users...")
+
 	users := []struct {
 		ID       uuid.UUID
 		Email    string
