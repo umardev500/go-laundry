@@ -43,5 +43,7 @@ func (Permission) Edges() []ent.Edge {
 		edge.From("feature", Feature.Type).
 			Ref("permissions").
 			Unique(),
+
+		edge.To("plans", Plan.Type),
 	}
 }
