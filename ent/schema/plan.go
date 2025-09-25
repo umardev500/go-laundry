@@ -26,6 +26,10 @@ func (Plan) Fields() []ent.Field {
 			Nillable().
 			Unique(),
 
+		field.String("description").
+			Optional().
+			Nillable(),
+
 		field.Int("max_orders").
 			Default(0).
 			Nillable().
