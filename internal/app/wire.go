@@ -16,6 +16,7 @@ import (
 	"github.com/umardev500/go-laundry/internal/module/user"
 	"github.com/umardev500/go-laundry/internal/seed"
 	"github.com/umardev500/go-laundry/internal/types"
+	"github.com/umardev500/go-laundry/pkg/email"
 	"github.com/umardev500/go-laundry/pkg/validator"
 )
 
@@ -29,6 +30,7 @@ var AppSet = wire.NewSet(
 	tenant.ProviderSet,
 	role.ProviderSet,
 	permission.ProviderSet,
+	email.NewClient,
 	seed.ProvideSeeders,
 )
 

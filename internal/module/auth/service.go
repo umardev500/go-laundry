@@ -10,6 +10,7 @@ import (
 	"github.com/umardev500/go-laundry/internal/config"
 	"github.com/umardev500/go-laundry/internal/domain/user"
 	"github.com/umardev500/go-laundry/internal/utils"
+	"github.com/umardev500/go-laundry/pkg/email"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -22,12 +23,14 @@ type Service interface {
 type serviceImpl struct {
 	userService user.Service
 	cfg         *config.Config
+	emailClient *email.EmailClient
 }
 
-func NewServiceImpl(userService user.Service, cfg *config.Config) *serviceImpl {
+func NewServiceImpl(userService user.Service, cfg *config.Config, emailClient *email.EmailClient) *serviceImpl {
 	return &serviceImpl{
 		userService: userService,
 		cfg:         cfg,
+		emailClient: emailClient,
 	}
 }
 
@@ -82,7 +85,10 @@ func (s *serviceImpl) ResetPassword(ctx context.Context, token, newPassword stri
 		return
 	}
 
-	// TODO: Send email
+	// Send message to the user email
+	go func() {
+		s.emailClient.Send([]string{updateduser.Email}, "Password Reset", "Your password has been reset")
+	}()
 
 	return s.Login(ctx, updateduser.Email, newPassword)
 }
@@ -103,14 +109,21 @@ func (s *serviceImpl) RequestPasswordReset(ctx context.Context, email string) er
 		ResetExpiresAt: &expiration,
 	}
 
-	fmt.Println("reset token:", token)
-
 	// Call user service to update credentials
 	if _, err := s.userService.Update(ctx, u.ID, payload, u.TenantID); err != nil {
 		return err
 	}
 
 	// TODO: Send email
+
+	// Send message to the user email
+	go func() {
+		s.emailClient.Send(
+			[]string{u.Email},
+			"Password Reset",
+			"Please reset your password using the following link: http://localhost:8080/reset-password?token="+token,
+		)
+	}()
 
 	return nil
 }

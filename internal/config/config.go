@@ -26,11 +26,19 @@ type JWT struct {
 	RefreshTokenExpirySeconds int64  `mapstructure:"refresh_token_expiry_seconds"`
 }
 
+type Email struct {
+	Sender      string `mapstructure:"sender"`
+	AppPassword string `mapstructure:"app_password"`
+	SmtpHost    string `mapstructure:"smtp_host"`
+	SmtpPort    string `mapstructure:"smtp_port"`
+}
+
 type Config struct {
 	Server   ServerConfig   `mapstructure:"server"`
 	Database DatabaseConfig `mapstructure:"database"`
 	Firebase Firebase       `mapstructure:"firebase"`
 	JWT      JWT            `mapstructure:"jwt"`
+	Email    Email          `mapstructure:"email"`
 }
 
 func LoadConfig(path string) *Config {
