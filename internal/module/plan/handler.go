@@ -31,6 +31,9 @@ func (h *Handler) SetupRoutes(router fiber.Router) {
 	r.Get("/", h.List)
 
 	r.Post("/:id/permissions", h.AddPermissions)
+
+	r.Delete("/:id/permissions", h.RemovePermissions)
+	r.Put("/:id/permissions", h.ReplacePermissions)
 }
 
 func (h *Handler) AddPermissions(c *fiber.Ctx) error {
@@ -88,5 +91,75 @@ func (h *Handler) List(c *fiber.Ctx) error {
 		Success: true,
 		Message: "Plans fetched successfully",
 		Data:    plans,
+	})
+}
+
+func (h *Handler) RemovePermissions(c *fiber.Ctx) error {
+	planID, ok := fiberutils.GetUUIDParamOrAPIError(c, "id")
+	if !ok {
+		return nil
+	}
+
+	var req dto.SetPermissionsRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
+
+	if err := h.validator.Struct(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
+
+	err := h.service.RemovePermissions(c.Context(), planID, req.PermissionIDs)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
+
+	return c.JSON(response.APIResponse[any]{
+		Success: true,
+		Message: "Permissions removed successfully",
+	})
+}
+
+func (h *Handler) ReplacePermissions(c *fiber.Ctx) error {
+	planID, ok := fiberutils.GetUUIDParamOrAPIError(c, "id")
+	if !ok {
+		return nil
+	}
+
+	var req dto.SetPermissionsRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
+
+	if err := h.validator.Struct(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
+
+	err := h.service.ReplacePermissions(c.Context(), planID, req.PermissionIDs)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
+
+	return c.JSON(response.APIResponse[any]{
+		Success: true,
+		Message: "Permissions replaced successfully",
 	})
 }
