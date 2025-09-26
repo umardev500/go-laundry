@@ -31,9 +31,24 @@ type Subscription struct {
 	UpdatedAt time.Time          `json:"updated_at"`
 }
 
+type SubscriptionFilter struct {
+	IncludePlan   bool
+	IncludeTenant bool
+}
+
+func (f SubscriptionFilter) WithDefaults() SubscriptionFilter {
+	return f
+}
+
 type SubscriptionCreate struct {
 	PlanID    uuid.UUID           `json:"plan_id"`
 	TenantID  uuid.UUID           `json:"tenant_id"`
+	StartDate *time.Time          `json:"start_date"`
+	EndDate   *time.Time          `json:"end_date"`
+	Status    *SubscriptionStatus `json:"status"`
+}
+
+type SubscriptionUpdate struct {
 	StartDate *time.Time          `json:"start_date"`
 	EndDate   *time.Time          `json:"end_date"`
 	Status    *SubscriptionStatus `json:"status"`

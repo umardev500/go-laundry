@@ -67,7 +67,16 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 }
 
 func (h *Handler) List(c *fiber.Ctx) error {
-	subs, err := h.service.List(c.Context())
+	// Parse query params
+	includePlan := c.QueryBool("include_plan", false)
+	includeTenant := c.QueryBool("include_tenant", false)
+
+	filter := subscription.SubscriptionFilter{
+		IncludePlan:   includePlan,
+		IncludeTenant: includeTenant,
+	}.WithDefaults()
+
+	subs, err := h.service.List(c.Context(), &filter)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(response.APIResponse[any]{
 			Success: false,

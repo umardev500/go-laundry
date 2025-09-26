@@ -2,19 +2,73 @@ package subscription
 
 import (
 	"context"
-	"fmt"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/ent"
 	subscriptionEntity "github.com/umardev500/go-laundry/ent/subscription"
 	"github.com/umardev500/go-laundry/internal/db"
 	"github.com/umardev500/go-laundry/internal/domain/plan"
 	"github.com/umardev500/go-laundry/internal/domain/subscription"
 	"github.com/umardev500/go-laundry/internal/domain/tenant"
+	"github.com/umardev500/go-laundry/internal/utils/redisutils"
 )
 
 type repositoryImpl struct {
 	client      *db.Client
 	redisClient *db.RedisClient
+}
+
+// GetByID implements subscription.Repository.
+func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID, filter *subscription.SubscriptionFilter) (*subscription.Subscription, error) {
+	conn := r.client.GetConn(ctx)
+
+	q := conn.Subscription.
+		Query().
+		Where(subscriptionEntity.IDEQ(id))
+
+	if filter.IncludePlan {
+		q = q.WithPlan()
+	}
+
+	if filter.IncludeTenant {
+		q = q.WithTenant()
+	}
+
+	sub, err := q.Only(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.mapFromEnt(sub), nil
+}
+
+// Update implements subscription.Repository.
+func (r *repositoryImpl) Update(ctx context.Context, payload *subscription.SubscriptionUpdate, id uuid.UUID) (*subscription.Subscription, error) {
+	conn := r.client.GetConn(ctx)
+
+	sub, err := conn.Subscription.
+		UpdateOneID(id).
+		SetNillableStartDate(payload.StartDate).
+		SetNillableEndDate(payload.EndDate).
+		SetNillableStatus((*subscriptionEntity.Status)(payload.Status)).
+		Save(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// --- Redis cache update for current active plan ---
+	//
+	// If the subscription is active, store the tnant's current plan in Redis for fast access.
+	if payload.Status != nil && *payload.Status == subscription.SubscriptionStatusActive {
+		err := r.setActivePlan(ctx, *sub.TenantID, *sub.PlanID, *sub.EndDate)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return r.mapFromEnt(sub), nil
 }
 
 // Create implements subscription.Repository.
@@ -46,10 +100,9 @@ func (r *repositoryImpl) Create(ctx context.Context, payload *subscription.Subsc
 
 	// --- Redis cache update for current active plan ---
 	//
-	// If the subscriptio is active, store the tnant's current plan in Redis for fast access.
+	// If the subscription is active, store the tnant's current plan in Redis for fast access.
 	if payload.Status != nil && *payload.Status == subscription.SubscriptionStatusActive {
-		cacheKey := fmt.Sprintf("tenant:%s:plan", payload.TenantID)
-		err = r.redisClient.Set(ctx, cacheKey, payload.PlanID.String(), 0).Err()
+		err := r.setActivePlan(ctx, *sub.TenantID, *sub.PlanID, *sub.EndDate)
 		if err != nil {
 			return nil, err
 		}
@@ -59,14 +112,21 @@ func (r *repositoryImpl) Create(ctx context.Context, payload *subscription.Subsc
 }
 
 // List implements subscription.Repository.
-func (r *repositoryImpl) List(ctx context.Context) ([]*subscription.Subscription, error) {
+func (r *repositoryImpl) List(ctx context.Context, filter *subscription.SubscriptionFilter) ([]*subscription.Subscription, error) {
 	conn := r.client.GetConn(ctx)
 
-	subs, err := conn.Subscription.
-		Query().
-		WithPlan().
-		WithTenant().
-		All(ctx)
+	q := conn.Subscription.
+		Query()
+
+	if filter.IncludePlan {
+		q = q.WithPlan()
+	}
+
+	if filter.IncludeTenant {
+		q = q.WithTenant()
+	}
+
+	subs, err := q.All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -123,6 +183,16 @@ func (r *repositoryImpl) mapFromEnt(s *ent.Subscription) *subscription.Subscript
 		CreatedAt: s.CreatedAt,
 		UpdatedAt: s.UpdatedAt,
 	}
+}
+
+func (r *repositoryImpl) setActivePlan(ctx context.Context, tenantID uuid.UUID, planID uuid.UUID, endDate time.Time) error {
+	cacheKey := redisutils.ActivePlan(tenantID)
+	expiration := time.Until(endDate)
+	if endDate.IsZero() {
+		expiration = 0
+	}
+
+	return r.redisClient.Set(ctx, cacheKey, planID.String(), expiration).Err()
 }
 
 func NewRepository(client *db.Client, redisClient *db.RedisClient) subscription.Repository {

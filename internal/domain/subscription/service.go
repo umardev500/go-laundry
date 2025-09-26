@@ -1,11 +1,18 @@
 package subscription
 
-import "context"
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
 
 type Service interface {
 	// List retrieves all subscriptions
-	List(ctx context.Context) ([]*Subscription, error)
+	List(ctx context.Context, filter *SubscriptionFilter) ([]*Subscription, error)
 
 	// Create insertrs a new subscription
 	Create(ctx context.Context, payload *SubscriptionCreate) (*Subscription, error)
+
+	// Activate sets a subscription as active for the tenant
+	Activate(ctx context.Context, id uuid.UUID) (*Subscription, error)
 }

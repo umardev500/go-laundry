@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/internal/domain/plan"
 	"github.com/umardev500/go-laundry/internal/domain/subscription"
 )
@@ -11,6 +12,35 @@ import (
 type serviceImpl struct {
 	repo        subscription.Repository
 	planService plan.Service
+}
+
+// Activate implements subscription.Service.
+func (s *serviceImpl) Activate(ctx context.Context, id uuid.UUID) (*subscription.Subscription, error) {
+	sub, err := s.repo.GetByID(ctx, id, &subscription.SubscriptionFilter{
+		IncludePlan: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	startDate := time.Now()
+	duration := sub.Plan.Duration
+
+	var payload *subscription.SubscriptionUpdate = &subscription.SubscriptionUpdate{
+		Status: func() *subscription.SubscriptionStatus {
+			status := subscription.SubscriptionStatusActive
+			return &status
+		}(),
+		StartDate: func() *time.Time {
+			return &startDate
+		}(),
+		EndDate: func() *time.Time {
+			now := startDate.AddDate(0, 0, *duration)
+			return &now
+		}(),
+	}
+
+	return s.repo.Update(ctx, payload, id)
 }
 
 // Create implements subscription.Service.
@@ -47,8 +77,8 @@ func (s *serviceImpl) Create(ctx context.Context, payload *subscription.Subscrip
 }
 
 // List implements subscription.Service.
-func (s *serviceImpl) List(ctx context.Context) ([]*subscription.Subscription, error) {
-	return s.repo.List(ctx)
+func (s *serviceImpl) List(ctx context.Context, filter *subscription.SubscriptionFilter) ([]*subscription.Subscription, error) {
+	return s.repo.List(ctx, filter)
 }
 
 func NewService(repo subscription.Repository, planService plan.Service) subscription.Service {
