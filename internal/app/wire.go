@@ -24,6 +24,7 @@ import (
 
 var AppSet = wire.NewSet(
 	db.NewEntClient,
+	db.NewRedisClient,
 	validator.New,
 	user.ProviderSet,
 	auth.ProviderSet,

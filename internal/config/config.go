@@ -33,12 +33,19 @@ type Email struct {
 	SmtpPort    string `mapstructure:"smtp_port"`
 }
 
+type Redis struct {
+	Addr     string `mapstructure:"addr"`
+	Password string `mapstructure:"password"`
+	DB       int    `mapstructure:"db"`
+}
+
 type Config struct {
 	Server   ServerConfig   `mapstructure:"server"`
 	Database DatabaseConfig `mapstructure:"database"`
 	Firebase Firebase       `mapstructure:"firebase"`
 	JWT      JWT            `mapstructure:"jwt"`
 	Email    Email          `mapstructure:"email"`
+	Redis    Redis          `mapstructure:"redis"`
 }
 
 func LoadConfig(path string) *Config {
