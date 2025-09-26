@@ -27,7 +27,17 @@ func (r *repositoryImpl) Create(ctx context.Context, payload *subscription.Subsc
 		SetNillableEndDate(payload.EndDate).
 		SetNillableStatus((*subscriptionEntity.Status)(payload.Status))
 
-	subEnt, err := builder.Save(ctx)
+	sub, err := builder.Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	subEnt, err := conn.Subscription.
+		Query().
+		WithPlan().
+		WithTenant().
+		Where(subscriptionEntity.IDEQ(sub.ID)).
+		Only(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -60,10 +70,9 @@ func (r *repositoryImpl) mapFromEnts(es []*ent.Subscription) []*subscription.Sub
 }
 
 func (r *repositoryImpl) mapFromEnt(s *ent.Subscription) *subscription.Subscription {
-	return &subscription.Subscription{
-		ID:     s.ID,
-		PlanID: s.PlanID,
-		Plan: &plan.Plan{
+	var mappedPlan *plan.Plan
+	if s.Edges.Plan != nil {
+		mappedPlan = &plan.Plan{
 			ID:          s.Edges.Plan.ID,
 			Name:        *s.Edges.Plan.Name,
 			Description: s.Edges.Plan.Description,
@@ -73,9 +82,12 @@ func (r *repositoryImpl) mapFromEnt(s *ent.Subscription) *subscription.Subscript
 			Duration:    s.Edges.Plan.DurationDays,
 			CreatedAt:   s.Edges.Plan.CreatedAt,
 			UpdatedAt:   s.Edges.Plan.UpdatedAt,
-		},
-		TenantID: s.TenantID,
-		Tenant: &tenant.Tenant{
+		}
+	}
+
+	var mappedTenant *tenant.Tenant
+	if s.Edges.Tenant != nil {
+		mappedTenant = &tenant.Tenant{
 			ID:        s.Edges.Tenant.ID,
 			Name:      *s.Edges.Tenant.Name,
 			Phone:     *s.Edges.Tenant.Phone,
@@ -83,7 +95,15 @@ func (r *repositoryImpl) mapFromEnt(s *ent.Subscription) *subscription.Subscript
 			Address:   *s.Edges.Tenant.Address,
 			CreatedAt: s.Edges.Tenant.CreatedAt,
 			UpdatedAt: s.Edges.Tenant.UpdatedAt,
-		},
+		}
+	}
+
+	return &subscription.Subscription{
+		ID:        s.ID,
+		PlanID:    s.PlanID,
+		Plan:      mappedPlan,
+		TenantID:  s.TenantID,
+		Tenant:    mappedTenant,
 		StartDate: s.StartDate,
 		EndDate:   s.EndDate,
 		Status:    subscription.SubscriptionStatus(s.Status),

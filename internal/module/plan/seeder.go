@@ -33,6 +33,13 @@ func (s *Seeder) Seed(ctx context.Context) error {
 		DurationDays *int
 	}{
 		{
+			Name:         "Free",
+			MaxOrders:    utils.Ptr(5),
+			MaxUsers:     utils.Ptr(1),
+			Price:        utils.Ptr(0.0),
+			DurationDays: utils.Ptr(30),
+		},
+		{
 			Name:         "Basic",
 			MaxOrders:    utils.Ptr(10),
 			MaxUsers:     utils.Ptr(1),

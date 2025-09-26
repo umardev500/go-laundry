@@ -3,6 +3,7 @@ package plan
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/ent"
 	planEntity "github.com/umardev500/go-laundry/ent/plan"
 	"github.com/umardev500/go-laundry/internal/db"
@@ -11,6 +12,19 @@ import (
 
 type repositoryImpl struct {
 	client *db.Client
+}
+
+// GetByID implements plan.Repository.
+func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID) (*plan.Plan, error) {
+	conn := r.client.GetConn(ctx)
+
+	q := conn.Plan.Query()
+	entPlan, err := q.Where(planEntity.IDEQ(id)).Only(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.mapFromEnt(entPlan), nil
 }
 
 // List implements plan.Repository.
