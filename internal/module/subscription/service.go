@@ -15,7 +15,10 @@ type serviceImpl struct {
 
 // Create implements subscription.Service.
 func (s *serviceImpl) Create(ctx context.Context, payload *subscription.SubscriptionCreate) (*subscription.Subscription, error) {
-	planData, err := s.planService.GetByID(ctx, payload.PlanID)
+	planData, err := s.planService.GetByID(ctx, payload.PlanID, &plan.PlanFilter{
+		IncludePermissions: false,
+		IncludeDeleted:     false,
+	})
 	if err != nil {
 		return nil, err
 	}

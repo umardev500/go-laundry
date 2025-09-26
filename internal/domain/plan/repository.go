@@ -10,12 +10,10 @@ type Repository interface {
 	// AddPermissions attaches a list of permissions to a plan.
 	AddPermissions(ctx context.Context, planID uuid.UUID, permissionIDs []uuid.UUID) error
 
-	// GetByID retrieves a plan by its ID.
-	// Returns an error if not found or sofet-deleted
-	GetByID(ctx context.Context, id uuid.UUID) (*Plan, error)
+	// GetByID retrieves a plan by its ID and the provided filter.
+	GetByID(ctx context.Context, id uuid.UUID, filter *PlanFilter) (*Plan, error)
 
 	// List retrieves all plans based on the provided filter.
-	// Soft-deleted plans are excluded
 	List(ctx context.Context, filter *PlanFilter) ([]*Plan, error)
 
 	// RemovePermissions detaches a list of permission from a plan.

@@ -29,6 +29,7 @@ func (h *Handler) SetupRoutes(router fiber.Router) {
 	r := router.Group("/plans")
 	r.Use(middleware.CheckAuth(h.cfg))
 	r.Get("/", h.List)
+	r.Get("/:id", h.GetByID)
 
 	r.Post("/:id/permissions", h.AddPermissions)
 
@@ -71,13 +72,45 @@ func (h *Handler) AddPermissions(c *fiber.Ctx) error {
 	})
 }
 
+func (h *Handler) GetByID(c *fiber.Ctx) error {
+	planID, ok := fiberutils.GetUUIDParamOrAPIError(c, "id")
+	if !ok {
+		return nil
+	}
+
+	// Parse query params
+	includeDeleted := c.QueryBool("include_deleted", false)
+	IncludePermissions := c.QueryBool("include_permissions", false)
+
+	filter := plan.PlanFilter{
+		IncludeDeleted:     includeDeleted,
+		IncludePermissions: IncludePermissions,
+	}.WithDefaults()
+
+	planData, err := h.service.GetByID(c.Context(), planID, &filter)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
+
+	return c.JSON(response.APIResponse[*plan.Plan]{
+		Success: true,
+		Message: "Plan fetched successfully",
+		Data:    planData,
+	})
+}
+
 func (h *Handler) List(c *fiber.Ctx) error {
 	// Parse query params
 	includeDeleted := c.QueryBool("include_deleted", false)
+	IncludePermissions := c.QueryBool("include_permissions", false)
 
 	filter := plan.PlanFilter{
-		IncludeDeleted: includeDeleted,
-	}
+		IncludeDeleted:     includeDeleted,
+		IncludePermissions: IncludePermissions,
+	}.WithDefaults()
 
 	plans, err := h.service.List(c.Context(), &filter)
 	if err != nil {

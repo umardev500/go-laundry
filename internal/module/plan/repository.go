@@ -9,6 +9,7 @@ import (
 	permissionEntity "github.com/umardev500/go-laundry/ent/permission"
 	planEntity "github.com/umardev500/go-laundry/ent/plan"
 	"github.com/umardev500/go-laundry/internal/db"
+	"github.com/umardev500/go-laundry/internal/domain/permission"
 	"github.com/umardev500/go-laundry/internal/domain/plan"
 )
 
@@ -86,10 +87,19 @@ func (r *repositoryImpl) AddPermissions(ctx context.Context, planID uuid.UUID, p
 }
 
 // GetByID implements plan.Repository.
-func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID) (*plan.Plan, error) {
+func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID, filter *plan.PlanFilter) (*plan.Plan, error) {
 	conn := r.client.GetConn(ctx)
 
 	q := conn.Plan.Query()
+
+	if !filter.IncludeDeleted {
+		q = q.Where(planEntity.DeletedAtIsNil())
+	}
+
+	if filter.IncludePermissions {
+		q = q.WithPermissions()
+	}
+
 	entPlan, err := q.Where(planEntity.IDEQ(id)).Only(ctx)
 	if err != nil {
 		return nil, err
@@ -106,6 +116,10 @@ func (r *repositoryImpl) List(ctx context.Context, filter *plan.PlanFilter) ([]*
 
 	if !filter.IncludeDeleted {
 		q = q.Where(planEntity.DeletedAtIsNil())
+	}
+
+	if filter.IncludePermissions {
+		q = q.WithPermissions()
 	}
 
 	plansEnt, err := q.All(ctx)
@@ -125,6 +139,16 @@ func (r *repositoryImpl) mapFromEnts(es []*ent.Plan) []*plan.Plan {
 }
 
 func (r *repositoryImpl) mapFromEnt(e *ent.Plan) *plan.Plan {
+	var mappedPermissions []*permission.Permission
+	if e.Edges.Permissions != nil {
+		for _, p := range e.Edges.Permissions {
+			mappedPermissions = append(mappedPermissions, &permission.Permission{
+				ID:   p.ID,
+				Name: *p.Name,
+			})
+		}
+	}
+
 	return &plan.Plan{
 		ID:          e.ID,
 		Name:        *e.Name,
@@ -133,6 +157,7 @@ func (r *repositoryImpl) mapFromEnt(e *ent.Plan) *plan.Plan {
 		MaxUsers:    e.MaxUsers,
 		Price:       e.Price,
 		Duration:    e.DurationDays,
+		Permissions: mappedPermissions,
 		CreatedAt:   e.CreatedAt,
 		UpdatedAt:   e.UpdatedAt,
 	}

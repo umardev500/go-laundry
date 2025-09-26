@@ -11,7 +11,7 @@ type Service interface {
 	AddPermissions(ctx context.Context, planID uuid.UUID, permissionIDs []uuid.UUID) error
 
 	// GetByID retrieves a plan by its ID
-	GetByID(ctx context.Context, id uuid.UUID) (*Plan, error)
+	GetByID(ctx context.Context, id uuid.UUID, filter *PlanFilter) (*Plan, error)
 
 	// List retrieves all plans
 	List(ctx context.Context, filter *PlanFilter) ([]*Plan, error)
