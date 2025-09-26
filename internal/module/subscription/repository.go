@@ -45,10 +45,14 @@ func (r *repositoryImpl) Create(ctx context.Context, payload *subscription.Subsc
 	}
 
 	// --- Redis cache update for current active plan ---
-	cacheKey := fmt.Sprintf("tenant:%s:plan", payload.TenantID)
-	err = r.redisClient.Set(ctx, cacheKey, payload.PlanID.String(), 0).Err()
-	if err != nil {
-		return nil, err
+	//
+	// If the subscriptio is active, store the tnant's current plan in Redis for fast access.
+	if payload.Status != nil && *payload.Status == subscription.SubscriptionStatusActive {
+		cacheKey := fmt.Sprintf("tenant:%s:plan", payload.TenantID)
+		err = r.redisClient.Set(ctx, cacheKey, payload.PlanID.String(), 0).Err()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return r.mapFromEnt(subEnt), nil
