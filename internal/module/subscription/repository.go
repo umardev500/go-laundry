@@ -6,7 +6,9 @@ import (
 	"github.com/umardev500/go-laundry/ent"
 	subscriptionEntity "github.com/umardev500/go-laundry/ent/subscription"
 	"github.com/umardev500/go-laundry/internal/db"
+	"github.com/umardev500/go-laundry/internal/domain/plan"
 	"github.com/umardev500/go-laundry/internal/domain/subscription"
+	"github.com/umardev500/go-laundry/internal/domain/tenant"
 )
 
 type repositoryImpl struct {
@@ -39,6 +41,8 @@ func (r *repositoryImpl) List(ctx context.Context) ([]*subscription.Subscription
 
 	subs, err := conn.Subscription.
 		Query().
+		WithPlan().
+		WithTenant().
 		All(ctx)
 	if err != nil {
 		return nil, err
@@ -57,9 +61,29 @@ func (r *repositoryImpl) mapFromEnts(es []*ent.Subscription) []*subscription.Sub
 
 func (r *repositoryImpl) mapFromEnt(s *ent.Subscription) *subscription.Subscription {
 	return &subscription.Subscription{
-		ID:        s.ID,
-		PlanID:    s.PlanID,
-		TenantID:  s.TenantID,
+		ID:     s.ID,
+		PlanID: s.PlanID,
+		Plan: &plan.Plan{
+			ID:          s.Edges.Plan.ID,
+			Name:        *s.Edges.Plan.Name,
+			Description: s.Edges.Plan.Description,
+			MaxOrders:   s.Edges.Plan.MaxOrders,
+			MaxUsers:    s.Edges.Plan.MaxUsers,
+			Price:       s.Edges.Plan.Price,
+			Duration:    s.Edges.Plan.DurationDays,
+			CreatedAt:   s.Edges.Plan.CreatedAt,
+			UpdatedAt:   s.Edges.Plan.UpdatedAt,
+		},
+		TenantID: s.TenantID,
+		Tenant: &tenant.Tenant{
+			ID:        s.Edges.Tenant.ID,
+			Name:      *s.Edges.Tenant.Name,
+			Phone:     *s.Edges.Tenant.Phone,
+			Email:     *s.Edges.Tenant.Email,
+			Address:   *s.Edges.Tenant.Address,
+			CreatedAt: s.Edges.Tenant.CreatedAt,
+			UpdatedAt: s.Edges.Tenant.UpdatedAt,
+		},
 		StartDate: s.StartDate,
 		EndDate:   s.EndDate,
 		Status:    subscription.SubscriptionStatus(s.Status),
