@@ -11,6 +11,21 @@ type serviceImpl struct {
 	repo plan.Repository
 }
 
+// AddPermissions implements plan.Service.
+func (s *serviceImpl) AddPermissions(ctx context.Context, planID uuid.UUID, permissionIDs []uuid.UUID) error {
+	return s.repo.AddPermissions(ctx, planID, permissionIDs)
+}
+
+// RemovePermissions implements plan.Service.
+func (s *serviceImpl) RemovePermissions(ctx context.Context, planID uuid.UUID, permissionIDs []uuid.UUID) error {
+	return s.repo.RemovePermissions(ctx, planID, permissionIDs)
+}
+
+// ReplacePermissions implements plan.Service.
+func (s *serviceImpl) ReplacePermissions(ctx context.Context, planID uuid.UUID, permissionIDs []uuid.UUID) error {
+	return s.repo.ReplacePermissions(ctx, planID, permissionIDs)
+}
+
 // GetByID implements plan.Service.
 func (s *serviceImpl) GetByID(ctx context.Context, id uuid.UUID) (*plan.Plan, error) {
 	return s.repo.GetByID(ctx, id)
