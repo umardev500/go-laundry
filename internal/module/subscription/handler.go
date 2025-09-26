@@ -5,18 +5,23 @@ import (
 	"github.com/umardev500/go-laundry/internal/app/middleware"
 	"github.com/umardev500/go-laundry/internal/config"
 	"github.com/umardev500/go-laundry/internal/domain/subscription"
+	"github.com/umardev500/go-laundry/internal/module/subscription/dto"
+	"github.com/umardev500/go-laundry/internal/utils/fiberutils"
 	"github.com/umardev500/go-laundry/pkg/response"
+	"github.com/umardev500/go-laundry/pkg/validator"
 )
 
 type Handler struct {
-	service subscription.Service
-	cfg     *config.Config
+	service   subscription.Service
+	cfg       *config.Config
+	validator *validator.Validator
 }
 
-func NewHandler(service subscription.Service, cfg *config.Config) *Handler {
+func NewHandler(service subscription.Service, cfg *config.Config, v *validator.Validator) *Handler {
 	return &Handler{
-		service: service,
-		cfg:     cfg,
+		service:   service,
+		cfg:       cfg,
+		validator: v,
 	}
 }
 
@@ -25,6 +30,40 @@ func (h *Handler) SetupRoutes(router fiber.Router) {
 
 	r.Use(middleware.CheckAuth(h.cfg))
 	r.Get("/", h.List)
+	r.Post("/", h.Create)
+}
+
+func (h *Handler) Create(c *fiber.Ctx) error {
+	var req dto.CreateSubscriptionRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
+
+	if err := h.validator.Struct(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
+
+	tenantIDPtr := fiberutils.GetTenantIDfromCtx(c)
+
+	sub, err := h.service.Create(c.Context(), req.ToSubscriptionCreate(*tenantIDPtr))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
+
+	return c.JSON(response.APIResponse[*subscription.Subscription]{
+		Success: true,
+		Message: "Subscription created successfully",
+		Data:    sub,
+	})
 }
 
 func (h *Handler) List(c *fiber.Ctx) error {

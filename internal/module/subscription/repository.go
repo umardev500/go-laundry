@@ -4,12 +4,33 @@ import (
 	"context"
 
 	"github.com/umardev500/go-laundry/ent"
+	subscriptionEntity "github.com/umardev500/go-laundry/ent/subscription"
 	"github.com/umardev500/go-laundry/internal/db"
 	"github.com/umardev500/go-laundry/internal/domain/subscription"
 )
 
 type repositoryImpl struct {
 	client *db.Client
+}
+
+// Create implements subscription.Repository.
+func (r *repositoryImpl) Create(ctx context.Context, payload *subscription.SubscriptionCreate) (*subscription.Subscription, error) {
+	conn := r.client.GetConn(ctx)
+
+	builder := conn.Subscription.
+		Create().
+		SetPlanID(payload.PlanID).
+		SetTenantID(payload.TenantID).
+		SetNillableStartDate(payload.StartDate).
+		SetNillableEndDate(payload.EndDate).
+		SetNillableStatus((*subscriptionEntity.Status)(payload.Status))
+
+	subEnt, err := builder.Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.mapFromEnt(subEnt), nil
 }
 
 // List implements subscription.Repository.
@@ -41,7 +62,7 @@ func (r *repositoryImpl) mapFromEnt(s *ent.Subscription) *subscription.Subscript
 		TenantID:  s.TenantID,
 		StartDate: s.StartDate,
 		EndDate:   s.EndDate,
-		Status:    s.Status.String(),
+		Status:    subscription.SubscriptionStatus(s.Status),
 		CreatedAt: s.CreatedAt,
 		UpdatedAt: s.UpdatedAt,
 	}

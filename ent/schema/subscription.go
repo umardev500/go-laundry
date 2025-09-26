@@ -28,9 +28,11 @@ func (Subscription) Fields() []ent.Field {
 			Nillable(),
 
 		field.Time("start_date").
-			Default(time.Now),
+			Optional().
+			Nillable(),
 
 		field.Time("end_date").
+			Optional().
 			Nillable(),
 
 		field.Enum("status").
