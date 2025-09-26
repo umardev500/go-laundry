@@ -68,6 +68,24 @@ func CheckAuth(cfg *config.Config) fiber.Handler {
 			c.Locals("tenant_id", tenantID)
 		}
 
+		// Fetch plan id if exist
+		var planIDStr string
+		err = token.Get("plan_id", &planIDStr)
+		if err != nil {
+			// Skip if claim does not exist
+			// Only log or ignore
+			log.Info().Msg("No plan_id found in token")
+		} else {
+			planID, err := uuid.Parse(planIDStr)
+			if err != nil {
+				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+					"error": err.Error(),
+				})
+			}
+
+			c.Locals("plan_id", planID)
+		}
+
 		c.Locals("user_id", userID)
 
 		return c.Next()

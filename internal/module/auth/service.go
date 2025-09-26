@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/lestrrat-go/jwx/v3/jwa"
 	"github.com/lestrrat-go/jwx/v3/jwt"
+	"github.com/redis/go-redis/v9"
 	"github.com/umardev500/go-laundry/internal/config"
+	"github.com/umardev500/go-laundry/internal/domain/auth"
 	"github.com/umardev500/go-laundry/internal/domain/user"
 	"github.com/umardev500/go-laundry/internal/utils"
 	"github.com/umardev500/go-laundry/pkg/email"
@@ -24,13 +27,15 @@ type serviceImpl struct {
 	userService user.Service
 	cfg         *config.Config
 	emailClient *email.EmailClient
+	repo        auth.Repository
 }
 
-func NewServiceImpl(userService user.Service, cfg *config.Config, emailClient *email.EmailClient) *serviceImpl {
+func NewServiceImpl(userService user.Service, cfg *config.Config, emailClient *email.EmailClient, repo auth.Repository) *serviceImpl {
 	return &serviceImpl{
 		userService: userService,
 		cfg:         cfg,
 		emailClient: emailClient,
+		repo:        repo,
 	}
 }
 
@@ -44,12 +49,22 @@ func (s *serviceImpl) Login(ctx context.Context, email, password string) (user *
 		return
 	}
 
-	token, err = s.generateJWT(user)
+	var tenantID = uuid.Nil
+	if user.TenantID != nil {
+		tenantID = *user.TenantID
+	}
+
+	planID, err := s.repo.GetActivePlanID(ctx, tenantID)
+	if err != nil && err != redis.Nil {
+		return
+	}
+
+	token, err = s.generateJWT(user, planID)
 	if err != nil {
 		return
 	}
 
-	refreshToken, err = s.generateRefreshToken(user)
+	refreshToken, err = s.generateRefreshToken(user, planID)
 	if err != nil {
 		return
 	}
@@ -128,7 +143,7 @@ func (s *serviceImpl) RequestPasswordReset(ctx context.Context, email string) er
 	return nil
 }
 
-func (s *serviceImpl) generateJWT(u *user.User) (tokenStr string, err error) {
+func (s *serviceImpl) generateJWT(u *user.User, planID uuid.UUID) (tokenStr string, err error) {
 	builder := jwt.NewBuilder().
 		Issuer(s.cfg.JWT.Issuer).
 		Subject(u.ID.String()).
@@ -137,6 +152,10 @@ func (s *serviceImpl) generateJWT(u *user.User) (tokenStr string, err error) {
 
 	if u.TenantID != nil {
 		builder.Claim("tenant_id", u.TenantID.String())
+	}
+
+	if planID != uuid.Nil {
+		builder.Claim("plan_id", planID.String())
 	}
 
 	token, err := builder.Build()
@@ -154,7 +173,7 @@ func (s *serviceImpl) generateJWT(u *user.User) (tokenStr string, err error) {
 	return
 }
 
-func (s *serviceImpl) generateRefreshToken(u *user.User) (tokenStr string, err error) {
+func (s *serviceImpl) generateRefreshToken(u *user.User, planID uuid.UUID) (tokenStr string, err error) {
 	builder := jwt.NewBuilder().
 		Issuer(s.cfg.JWT.Issuer).
 		Subject(u.ID.String()).
@@ -163,6 +182,10 @@ func (s *serviceImpl) generateRefreshToken(u *user.User) (tokenStr string, err e
 
 	if u.TenantID != nil {
 		builder.Claim("tenant_id", u.TenantID.String())
+	}
+
+	if planID != uuid.Nil {
+		builder.Claim("plan_id", planID.String())
 	}
 
 	refreshToken, err := builder.Build()
