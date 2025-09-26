@@ -14,7 +14,8 @@ import (
 )
 
 type repositoryImpl struct {
-	client *db.Client
+	client      *db.Client
+	redisClient *db.RedisClient
 }
 
 // ReplacePermissions implements plan.Repository.
@@ -36,6 +37,31 @@ func (r *repositoryImpl) ReplacePermissions(ctx context.Context, planID uuid.UUI
 		AddPermissions(perms...).
 		Exec(ctx)
 
+	if err != nil {
+		return fmt.Errorf("failed to replace permissions: %w", err)
+	}
+
+	// --- Redis cache update ---
+	if r.redisClient != nil {
+		cacheKey := fmt.Sprintf("plan:%s:permissions", planID)
+
+		// Convert permissions to names
+		names := make([]string, len(perms))
+		for i, p := range perms {
+			names[i] = *p.Name
+		}
+
+		// Use a transaction to replace the Redis Set atomically
+		pipe := r.redisClient.TxPipeline()
+		pipe.Del(ctx, cacheKey) // remove old permissions
+		if len(names) > 0 {
+			pipe.SAdd(ctx, cacheKey, names) // add new permissions
+		}
+		if _, err := pipe.Exec(ctx); err != nil {
+			fmt.Printf("failed to update redis cache for replace permissions: %v\n", err)
+		}
+	}
+
 	return err
 }
 
@@ -56,6 +82,27 @@ func (r *repositoryImpl) RemovePermissions(ctx context.Context, planID uuid.UUID
 		UpdateOneID(planID).
 		RemovePermissions(perms...).
 		Exec(ctx)
+
+	if err != nil {
+		return fmt.Errorf("failed to remove permissions: %w", err)
+	}
+
+	// --- Redis cache update ---
+	if r.redisClient != nil {
+		cacheKey := fmt.Sprintf("plan:%s:permissions", planID)
+
+		// Convert permissions to names
+		names := make([]string, len(perms))
+		for i, p := range perms {
+			names[i] = *p.Name
+		}
+
+		// Remove from Redis Set
+		if err := r.redisClient.SRem(ctx, cacheKey, names).Err(); err != nil {
+			// Log error but don’t block main flow
+			fmt.Printf("failed to remove permissions from redis: %v\n", err)
+		}
+	}
 
 	return err
 }
@@ -82,8 +129,25 @@ func (r *repositoryImpl) AddPermissions(ctx context.Context, planID uuid.UUID, p
 		UpdateOne(plantEnt).
 		AddPermissions(perms...).
 		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to add permissions: %w", err)
+	}
 
-	return err
+	// --- Redis caching step ---
+	cacheKey := fmt.Sprintf("plan:%s:permissions", plantEnt.ID)
+
+	// Convert permissions to names
+	names := make([]string, len(perms))
+	for i, p := range perms {
+		names[i] = *p.Name
+	}
+
+	// Add to a Redis Set (avoids duplicates automatically)
+	if err := r.redisClient.SAdd(ctx, cacheKey, names).Err(); err != nil {
+		return fmt.Errorf("failed to cache permissions: %w", err)
+	}
+
+	return nil
 }
 
 // GetByID implements plan.Repository.
@@ -163,8 +227,9 @@ func (r *repositoryImpl) mapFromEnt(e *ent.Plan) *plan.Plan {
 	}
 }
 
-func NewRepository(client *db.Client) plan.Repository {
+func NewRepository(client *db.Client, redisClient *db.RedisClient) plan.Repository {
 	return &repositoryImpl{
-		client: client,
+		client:      client,
+		redisClient: redisClient,
 	}
 }
