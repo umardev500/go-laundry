@@ -2,6 +2,7 @@ package subscription
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/umardev500/go-laundry/ent"
 	subscriptionEntity "github.com/umardev500/go-laundry/ent/subscription"
@@ -12,7 +13,8 @@ import (
 )
 
 type repositoryImpl struct {
-	client *db.Client
+	client      *db.Client
+	redisClient *db.RedisClient
 }
 
 // Create implements subscription.Repository.
@@ -38,6 +40,13 @@ func (r *repositoryImpl) Create(ctx context.Context, payload *subscription.Subsc
 		WithTenant().
 		Where(subscriptionEntity.IDEQ(sub.ID)).
 		Only(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// --- Redis cache update for current active plan ---
+	cacheKey := fmt.Sprintf("tenant:%s:plan", payload.TenantID)
+	err = r.redisClient.Set(ctx, cacheKey, payload.PlanID.String(), 0).Err()
 	if err != nil {
 		return nil, err
 	}
@@ -112,8 +121,9 @@ func (r *repositoryImpl) mapFromEnt(s *ent.Subscription) *subscription.Subscript
 	}
 }
 
-func NewRepository(client *db.Client) subscription.Repository {
+func NewRepository(client *db.Client, redisClient *db.RedisClient) subscription.Repository {
 	return &repositoryImpl{
-		client: client,
+		client:      client,
+		redisClient: redisClient,
 	}
 }
