@@ -123,7 +123,15 @@ func (s *serviceImpl) Create(
 		}
 
 		// Create payment
-		pymnt, err := s.createPayment(ctx, userID, payload.TenantID, sub.ID, *planData.Price, paymentStatus)
+		pymnt, err := s.createPayment(
+			ctx,
+			userID,
+			payload.TenantID,
+			sub.ID,
+			payload.PaymentMethodID,
+			*planData.Price,
+			paymentStatus,
+		)
 		if err != nil {
 			return err
 		}
@@ -163,6 +171,7 @@ func (s *serviceImpl) createPayment(
 	userID uuid.UUID,
 	tenantID uuid.UUID,
 	subID uuid.UUID,
+	paymentMethodID uuid.UUID,
 	amount float64,
 	status payment.Status,
 ) (*payment.Payment, error) {
@@ -175,11 +184,12 @@ func (s *serviceImpl) createPayment(
 
 			return &tenantID
 		}(),
-		ReferenceID:   subID,
-		ReferenceType: payment.Subscription,
-		Amount:        amount,
-		Currency:      payment.IDR,
-		Status:        status,
+		ReferenceID:     subID,
+		ReferenceType:   payment.Subscription,
+		PaymentMethodID: paymentMethodID,
+		Amount:          amount,
+		Currency:        payment.IDR,
+		Status:          status,
 		PaidAt: func() *time.Time {
 			if status == payment.Completed {
 				now := time.Now()

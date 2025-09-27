@@ -40,6 +40,9 @@ func (Payment) Fields() []ent.Field {
 			Immutable().
 			Nillable(),
 
+		field.UUID("payment_method_id", uuid.UUID{}).
+			Nillable(),
+
 		// Details
 		field.Float("amount").
 			Default(0.0).
@@ -91,5 +94,11 @@ func (Payment) Edges() []ent.Edge {
 			Unique().
 			Immutable().
 			Comment("only used if reference_type is subscription"),
+
+		edge.From("payment_method", PaymentMethod.Type).
+			Ref("payments").
+			Field("payment_method_id").
+			Required().
+			Unique(),
 	}
 }

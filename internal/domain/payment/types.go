@@ -45,14 +45,15 @@ type Payment struct {
 }
 
 type PaymentCreate struct {
-	UserID        uuid.UUID
-	TenantID      *uuid.UUID
-	ReferenceID   uuid.UUID
-	ReferenceType ReferenceType
-	Amount        float64
-	Currency      Currency
-	Status        Status
-	PaidAt        *time.Time
+	UserID          uuid.UUID
+	TenantID        *uuid.UUID
+	ReferenceID     uuid.UUID
+	ReferenceType   ReferenceType
+	PaymentMethodID uuid.UUID
+	Amount          float64
+	Currency        Currency
+	Status          Status
+	PaidAt          *time.Time
 }
 
 type PaymentUpdate struct {

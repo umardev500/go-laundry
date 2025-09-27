@@ -6,15 +6,17 @@ import (
 )
 
 type CreateSubscriptionRequest struct {
-	PlanID uuid.UUID `json:"plan_id" validate:"required"`
+	PlanID          uuid.UUID `json:"plan_id" validate:"required"`
+	PaymentMethodID uuid.UUID `json:"payment_method_id" validate:"required"`
 }
 
 func (r *CreateSubscriptionRequest) ToSubscriptionCreate(tenantID uuid.UUID) *subscription.SubscriptionCreate {
 	return &subscription.SubscriptionCreate{
-		PlanID:    r.PlanID,
-		TenantID:  tenantID,
-		StartDate: nil,
-		EndDate:   nil,
-		Status:    nil,
+		PlanID:          r.PlanID,
+		TenantID:        tenantID,
+		PaymentMethodID: r.PaymentMethodID,
+		StartDate:       nil,
+		EndDate:         nil,
+		Status:          nil,
 	}
 }

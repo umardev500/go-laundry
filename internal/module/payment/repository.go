@@ -79,6 +79,7 @@ func (r *repositoryImpl) Create(ctx context.Context, payload *payment.PaymentCre
 		SetNillableTenantID(payload.TenantID).
 		SetReferenceID(payload.ReferenceID).
 		SetReferenceType(paymentEntity.ReferenceType(payload.ReferenceType)).
+		SetPaymentMethodID(payload.PaymentMethodID).
 		SetAmount(payload.Amount).
 		SetCurrency(paymentEntity.Currency(payload.Currency)).
 		SetStatus(paymentEntity.Status(payload.Status)).

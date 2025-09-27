@@ -43,15 +43,16 @@ func (f SubscriptionFilter) WithDefaults() SubscriptionFilter {
 }
 
 type SubscriptionCreate struct {
-	PlanID    uuid.UUID           `json:"plan_id"`
-	TenantID  uuid.UUID           `json:"tenant_id"`
-	StartDate *time.Time          `json:"start_date"`
-	EndDate   *time.Time          `json:"end_date"`
-	Status    *SubscriptionStatus `json:"status"`
+	PlanID          uuid.UUID
+	TenantID        uuid.UUID
+	PaymentMethodID uuid.UUID
+	StartDate       *time.Time
+	EndDate         *time.Time
+	Status          *SubscriptionStatus
 }
 
 type SubscriptionUpdate struct {
-	StartDate *time.Time          `json:"start_date"`
-	EndDate   *time.Time          `json:"end_date"`
-	Status    *SubscriptionStatus `json:"status"`
+	StartDate *time.Time
+	EndDate   *time.Time
+	Status    *SubscriptionStatus
 }
