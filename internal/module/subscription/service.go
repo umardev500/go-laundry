@@ -123,9 +123,23 @@ func (s *serviceImpl) Create(
 		}
 
 		// Create payment
-		_, err = s.createPayment(ctx, userID, payload.TenantID, sub.ID, *planData.Price, paymentStatus)
+		pymnt, err := s.createPayment(ctx, userID, payload.TenantID, sub.ID, *planData.Price, paymentStatus)
 		if err != nil {
 			return err
+		}
+
+		sub.Payment = &payment.Payment{
+			ID:            pymnt.ID,
+			UserID:        pymnt.UserID,
+			TenantID:      pymnt.TenantID,
+			ReferenceID:   pymnt.ReferenceID,
+			ReferenceType: pymnt.ReferenceType,
+			Amount:        pymnt.Amount,
+			Currency:      pymnt.Currency,
+			Status:        pymnt.Status,
+			PaidAt:        pymnt.PaidAt,
+			CreatedAt:     pymnt.CreatedAt,
+			UpdatedAt:     pymnt.UpdatedAt,
 		}
 
 		return nil

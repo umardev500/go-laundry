@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/umardev500/go-laundry/internal/domain/payment"
 	"github.com/umardev500/go-laundry/internal/domain/plan"
 	"github.com/umardev500/go-laundry/internal/domain/tenant"
 )
@@ -24,6 +25,7 @@ type Subscription struct {
 	Plan      *plan.Plan         `json:"plan"`
 	TenantID  *uuid.UUID         `json:"tenant_id"`
 	Tenant    *tenant.Tenant     `json:"tenant"`
+	Payment   *payment.Payment   `json:"payment"`
 	StartDate *time.Time         `json:"start_date"`
 	EndDate   *time.Time         `json:"end_date"`
 	Status    SubscriptionStatus `json:"status"`
