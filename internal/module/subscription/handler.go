@@ -2,6 +2,7 @@ package subscription
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/internal/app/middleware"
 	"github.com/umardev500/go-laundry/internal/config"
 	"github.com/umardev500/go-laundry/internal/domain/subscription"
@@ -50,8 +51,9 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 	}
 
 	tenantIDPtr := fiberutils.GetTenantIDfromCtx(c)
+	userID := c.Locals("user_id").(uuid.UUID)
 
-	sub, err := h.service.Create(c.Context(), req.ToSubscriptionCreate(*tenantIDPtr))
+	sub, err := h.service.Create(c.Context(), userID, req.ToSubscriptionCreate(*tenantIDPtr))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
 			Success: false,

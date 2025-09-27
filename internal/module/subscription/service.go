@@ -5,13 +5,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/umardev500/go-laundry/internal/domain/payment"
 	"github.com/umardev500/go-laundry/internal/domain/plan"
 	"github.com/umardev500/go-laundry/internal/domain/subscription"
 )
 
 type serviceImpl struct {
-	repo        subscription.Repository
-	planService plan.Service
+	repo           subscription.Repository
+	planService    plan.Service
+	paymentService payment.Service
 }
 
 // Activate implements subscription.Service.
@@ -44,7 +46,11 @@ func (s *serviceImpl) Activate(ctx context.Context, id uuid.UUID) (*subscription
 }
 
 // Create implements subscription.Service.
-func (s *serviceImpl) Create(ctx context.Context, payload *subscription.SubscriptionCreate) (*subscription.Subscription, error) {
+func (s *serviceImpl) Create(
+	ctx context.Context,
+	userID uuid.UUID,
+	payload *subscription.SubscriptionCreate,
+) (*subscription.Subscription, error) {
 	planData, err := s.planService.GetByID(ctx, payload.PlanID, &plan.PlanFilter{
 		IncludePermissions: false,
 		IncludeDeleted:     false,
@@ -53,12 +59,16 @@ func (s *serviceImpl) Create(ctx context.Context, payload *subscription.Subscrip
 		return nil, err
 	}
 
+	var paymentStatus payment.Status = payment.Pending
+
 	// If the selected plan has a price of 0 (treated as the "free" plan),
 	// we immediately activate the subscription by setting:
 	//	- Status	-> Active
 	//	- StartDate	-> current time
 	//	- EndDate	-> one day from now
 	if *planData.Price == 0 {
+		paymentStatus = payment.Completed
+
 		payload.Status = func() *subscription.SubscriptionStatus {
 			status := subscription.SubscriptionStatusActive
 			return &status
@@ -73,7 +83,19 @@ func (s *serviceImpl) Create(ctx context.Context, payload *subscription.Subscrip
 		}()
 	}
 
-	return s.repo.Create(ctx, payload)
+	sub, err := s.repo.Create(ctx, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create payment
+	_, err = s.createPayment(ctx, userID, payload.TenantID, sub.ID, *planData.Price, paymentStatus)
+	if err != nil {
+		return nil, err
+	}
+
+	return sub, nil
+
 }
 
 // List implements subscription.Service.
@@ -81,9 +103,49 @@ func (s *serviceImpl) List(ctx context.Context, filter *subscription.Subscriptio
 	return s.repo.List(ctx, filter)
 }
 
-func NewService(repo subscription.Repository, planService plan.Service) subscription.Service {
+func (s *serviceImpl) createPayment(
+	ctx context.Context,
+	userID uuid.UUID,
+	tenantID uuid.UUID,
+	subID uuid.UUID,
+	amount float64,
+	status payment.Status,
+) (*payment.Payment, error) {
+	var paymentCreate = payment.PaymentCreate{
+		UserID: userID,
+		TenantID: func() *uuid.UUID {
+			if tenantID == uuid.Nil {
+				return nil
+			}
+
+			return &tenantID
+		}(),
+		ReferenceID:   subID,
+		ReferenceType: payment.Subscription,
+		Amount:        amount,
+		Currency:      payment.IDR,
+		Status:        status,
+		PaidAt: func() *time.Time {
+			if status == payment.Completed {
+				now := time.Now()
+				return &now
+			}
+
+			return nil
+		}(),
+	}
+
+	return s.paymentService.Create(ctx, &paymentCreate)
+}
+
+func NewService(
+	repo subscription.Repository,
+	planService plan.Service,
+	paymentService payment.Service,
+) subscription.Service {
 	return &serviceImpl{
-		repo:        repo,
-		planService: planService,
+		repo:           repo,
+		planService:    planService,
+		paymentService: paymentService,
 	}
 }
