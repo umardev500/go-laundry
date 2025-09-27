@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/umardev500/go-laundry/internal/db"
 	"github.com/umardev500/go-laundry/internal/domain/payment"
 	"github.com/umardev500/go-laundry/internal/domain/plan"
 	"github.com/umardev500/go-laundry/internal/domain/subscription"
@@ -14,6 +15,7 @@ type serviceImpl struct {
 	repo           subscription.Repository
 	planService    plan.Service
 	paymentService payment.Service
+	client         *db.Client
 }
 
 // Activate implements subscription.Service.
@@ -42,7 +44,36 @@ func (s *serviceImpl) Activate(ctx context.Context, id uuid.UUID) (*subscription
 		}(),
 	}
 
-	return s.repo.Update(ctx, payload, id)
+	// Set paid completed for payment
+	paymentPayload := payment.PaymentUpdate{
+		Status: func() *payment.Status {
+			status := payment.Completed
+			return &status
+		}(),
+		PaidAt: func() *time.Time {
+			now := time.Now()
+			return &now
+		}(),
+	}
+
+	var subscriptonUpdated *subscription.Subscription
+
+	err = s.client.WithTransaction(ctx, func(ctx context.Context) error {
+		_, err = s.paymentService.Update(ctx, &paymentPayload, sub.ID, sub.TenantID)
+		if err != nil {
+			return err
+		}
+
+		subscriptonUpdated, err = s.repo.Update(ctx, payload, id)
+
+		return err
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return subscriptonUpdated, nil
 }
 
 // Create implements subscription.Service.
@@ -51,6 +82,7 @@ func (s *serviceImpl) Create(
 	userID uuid.UUID,
 	payload *subscription.SubscriptionCreate,
 ) (*subscription.Subscription, error) {
+	var sub *subscription.Subscription
 	planData, err := s.planService.GetByID(ctx, payload.PlanID, &plan.PlanFilter{
 		IncludePermissions: false,
 		IncludeDeleted:     false,
@@ -59,37 +91,46 @@ func (s *serviceImpl) Create(
 		return nil, err
 	}
 
-	var paymentStatus payment.Status = payment.Pending
+	err = s.client.WithTransaction(ctx, func(ctx context.Context) error {
 
-	// If the selected plan has a price of 0 (treated as the "free" plan),
-	// we immediately activate the subscription by setting:
-	//	- Status	-> Active
-	//	- StartDate	-> current time
-	//	- EndDate	-> one day from now
-	if *planData.Price == 0 {
-		paymentStatus = payment.Completed
+		var paymentStatus payment.Status = payment.Pending
 
-		payload.Status = func() *subscription.SubscriptionStatus {
-			status := subscription.SubscriptionStatusActive
-			return &status
-		}()
-		payload.StartDate = func() *time.Time {
-			now := time.Now()
-			return &now
-		}()
-		payload.EndDate = func() *time.Time {
-			now := time.Now().AddDate(0, 0, 1)
-			return &now
-		}()
-	}
+		// If the selected plan has a price of 0 (treated as the "free" plan),
+		// we immediately activate the subscription by setting:
+		//	- Status	-> Active
+		//	- StartDate	-> current time
+		//	- EndDate	-> one day from now
+		if *planData.Price == 0 {
+			paymentStatus = payment.Completed
 
-	sub, err := s.repo.Create(ctx, payload)
-	if err != nil {
-		return nil, err
-	}
+			payload.Status = func() *subscription.SubscriptionStatus {
+				status := subscription.SubscriptionStatusActive
+				return &status
+			}()
+			payload.StartDate = func() *time.Time {
+				now := time.Now()
+				return &now
+			}()
+			payload.EndDate = func() *time.Time {
+				now := time.Now().AddDate(0, 0, 1)
+				return &now
+			}()
+		}
 
-	// Create payment
-	_, err = s.createPayment(ctx, userID, payload.TenantID, sub.ID, *planData.Price, paymentStatus)
+		sub, err = s.repo.Create(ctx, payload)
+		if err != nil {
+			return err
+		}
+
+		// Create payment
+		_, err = s.createPayment(ctx, userID, payload.TenantID, sub.ID, *planData.Price, paymentStatus)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -142,10 +183,12 @@ func NewService(
 	repo subscription.Repository,
 	planService plan.Service,
 	paymentService payment.Service,
+	client *db.Client,
 ) subscription.Service {
 	return &serviceImpl{
 		repo:           repo,
 		planService:    planService,
 		paymentService: paymentService,
+		client:         client,
 	}
 }
