@@ -9,6 +9,7 @@ import (
 	"github.com/umardev500/go-laundry/internal/db"
 	"github.com/umardev500/go-laundry/internal/module/auth"
 	"github.com/umardev500/go-laundry/internal/module/feature"
+	"github.com/umardev500/go-laundry/internal/module/payment"
 	"github.com/umardev500/go-laundry/internal/module/permission"
 	"github.com/umardev500/go-laundry/internal/module/plan"
 	"github.com/umardev500/go-laundry/internal/module/registration"
@@ -37,6 +38,7 @@ var AppSet = wire.NewSet(
 	email.NewClient,
 	subscription.ProviderSet,
 	seed.ProvideSeeders,
+	payment.ProviderSet,
 )
 
 func InitApp(cfg *config.Config) (*App, error) {

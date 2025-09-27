@@ -27,6 +27,7 @@ func (Payment) Fields() []ent.Field {
 
 		field.UUID("tenant_id", uuid.UUID{}).
 			Immutable().
+			Optional().
 			Nillable(),
 
 		field.UUID("reference_id", uuid.UUID{}).
@@ -44,12 +45,13 @@ func (Payment) Fields() []ent.Field {
 			Default(0.0).
 			Nillable(),
 
-		field.String("currency").
-			NotEmpty().
+		field.Enum("currency").
+			Values("IDR").
+			Default("IDR").
 			Nillable(),
 
 		field.Enum("status").
-			Values("pending", "success", "failed", "cancelled").
+			Values("pending", "completed", "failed", "cancelled").
 			Default("pending").
 			Nillable(),
 
@@ -80,7 +82,6 @@ func (Payment) Edges() []ent.Edge {
 		edge.From("tenant", Tenant.Type).
 			Ref("payments").
 			Field("tenant_id").
-			Required().
 			Immutable().
 			Unique(),
 
