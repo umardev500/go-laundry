@@ -3,6 +3,7 @@ package paymentmethodtype
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/umardev500/go-laundry/internal/app/middleware"
 	"github.com/umardev500/go-laundry/internal/config"
 	paymentmethodtype "github.com/umardev500/go-laundry/internal/domain/payment_method_type"
 	"github.com/umardev500/go-laundry/internal/module/payment_method_type/dto"
@@ -27,6 +28,7 @@ func NewHandler(cfg *config.Config, v *validator.Validator, service paymentmetho
 func (h *Handler) SetupRoutes(router fiber.Router) {
 	r := router.Group("/payment-method-types")
 
+	r.Use(middleware.CheckAuth(h.cfg))
 	r.Get("/", h.list)
 	r.Post("/", h.create)
 	r.Get("/:id", h.getByID)
