@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/umardev500/go-laundry/internal/module/auth"
 	"github.com/umardev500/go-laundry/internal/module/payment"
+	paymentmethod "github.com/umardev500/go-laundry/internal/module/payment_method"
 	paymentmethodtype "github.com/umardev500/go-laundry/internal/module/payment_method_type"
 	"github.com/umardev500/go-laundry/internal/module/plan"
 	"github.com/umardev500/go-laundry/internal/module/registration"
@@ -20,6 +21,7 @@ func NewFiberApp(
 	subscriptionHandler *subscription.Handler,
 	planHandler *plan.Handler,
 	paymentHandler *payment.Handler,
+	paymentMethodHandler *paymentmethod.Handler,
 	paymentMethodTypeHandler *paymentmethodtype.Handler,
 ) *fiber.App {
 	app := fiber.New(fiber.Config{
@@ -36,6 +38,7 @@ func NewFiberApp(
 	planHandler.SetupRoutes(api)
 	paymentHandler.SetupRoutes(api)
 	paymentMethodTypeHandler.SetupRoutes(api)
+	paymentMethodHandler.SetupRoutes(api)
 
 	return app
 }
