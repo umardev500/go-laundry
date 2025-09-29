@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/internal/db"
-	paymentmethodtype "github.com/umardev500/go-laundry/internal/domain/payment_method_type"
+	paymentmethod "github.com/umardev500/go-laundry/internal/domain/payment_method"
 )
 
 type Seeder struct {
@@ -35,7 +35,7 @@ func (s *Seeder) Seed(ctx context.Context) error {
 				id, _ := uuid.Parse("11111111-1111-1111-1111-111111111111")
 				return id
 			}(),
-			Metadata: paymentmethodtype.QRISMetadata{
+			Metadata: paymentmethod.QRISMetadata{
 				ImageURL:     "https://example.com/image.png",
 				MerchantName: "Example Merchant",
 			},
@@ -49,7 +49,7 @@ func (s *Seeder) Seed(ctx context.Context) error {
 				id, _ := uuid.Parse("22222222-2222-2222-2222-222222222222")
 				return id
 			}(),
-			Metadata: paymentmethodtype.BankStransferMetadata{
+			Metadata: paymentmethod.BankStransferMetadata{
 				Name:          "John Doe",
 				AccountNumber: "1234567890",
 				AccountHolder: "John Doe",
@@ -64,7 +64,7 @@ func (s *Seeder) Seed(ctx context.Context) error {
 				id, _ := uuid.Parse("33333333-3333-3333-3333-333333333333")
 				return id
 			}(),
-			Metadata: paymentmethodtype.CashMetadata{
+			Metadata: paymentmethod.CashMetadata{
 				Note: func() *string {
 					s := "Please pay at the counter"
 					return &s

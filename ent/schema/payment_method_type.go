@@ -34,7 +34,8 @@ func (PaymentMethodType) Fields() []ent.Field {
 
 		field.Enum("status").
 			Values("active", "inactive").
-			Default("active"),
+			Default("active").
+			Nillable(),
 
 		field.Time("created_at").
 			Default(time.Now).
