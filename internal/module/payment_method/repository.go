@@ -31,6 +31,14 @@ func (r *repositoryImpl) Create(ctx context.Context, payload *paymentmethod.Crea
 		return nil, err
 	}
 
+	// Get created object with type
+	methodType, err := entobj.QueryPaymentMethodType().Only(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	entobj.Edges.PaymentMethodType = methodType
+
 	return r.mapFromEnt(entobj), nil
 }
 
