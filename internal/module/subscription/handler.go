@@ -32,6 +32,30 @@ func (h *Handler) SetupRoutes(router fiber.Router) {
 	r.Use(middleware.CheckAuth(h.cfg))
 	r.Get("/", h.List)
 	r.Post("/", h.Create)
+
+	// Pathcing
+	r.Patch("/:id/activate", h.Activate)
+}
+
+func (h *Handler) Activate(c *fiber.Ctx) error {
+	id, ok := fiberutils.GetUUIDParamOrAPIError(c, "id")
+	if !ok {
+		return nil
+	}
+
+	sub, err := h.service.Activate(c.Context(), id)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
+
+	return c.JSON(response.APIResponse[*subscription.Subscription]{
+		Success: true,
+		Message: "Subscription activated successfully",
+		Data:    sub,
+	})
 }
 
 func (h *Handler) Create(c *fiber.Ctx) error {
@@ -69,16 +93,16 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 }
 
 func (h *Handler) List(c *fiber.Ctx) error {
-	// Parse query params
-	includePlan := c.QueryBool("include_plan", false)
-	includeTenant := c.QueryBool("include_tenant", false)
 
-	filter := subscription.SubscriptionFilter{
-		IncludePlan:   includePlan,
-		IncludeTenant: includeTenant,
-	}.WithDefaults()
+	var filter subscription.SubscriptionFilter
+	if err := c.QueryParser(&filter); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
 
-	subs, err := h.service.List(c.Context(), &filter)
+	subs, err := h.service.List(c.Context(), filter.WithDefaults())
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(response.APIResponse[any]{
 			Success: false,

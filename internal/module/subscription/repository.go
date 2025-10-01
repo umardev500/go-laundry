@@ -8,6 +8,9 @@ import (
 	"github.com/umardev500/go-laundry/ent"
 	subscriptionEntity "github.com/umardev500/go-laundry/ent/subscription"
 	"github.com/umardev500/go-laundry/internal/db"
+	"github.com/umardev500/go-laundry/internal/domain/payment"
+	paymentmethod "github.com/umardev500/go-laundry/internal/domain/payment_method"
+	paymentmethodtype "github.com/umardev500/go-laundry/internal/domain/payment_method_type"
 	"github.com/umardev500/go-laundry/internal/domain/plan"
 	"github.com/umardev500/go-laundry/internal/domain/subscription"
 	"github.com/umardev500/go-laundry/internal/domain/tenant"
@@ -27,20 +30,14 @@ func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID, filter *subs
 		Query().
 		Where(subscriptionEntity.IDEQ(id))
 
-	if filter.IncludePlan {
-		q = q.WithPlan()
-	}
-
-	if filter.IncludeTenant {
-		q = q.WithTenant()
-	}
+	r.applyFilter(&q, filter)
 
 	sub, err := q.Only(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return r.mapFromEnt(sub), nil
+	return r.mapFromEnt(ctx, sub), nil
 }
 
 // Update implements subscription.Repository.
@@ -68,7 +65,7 @@ func (r *repositoryImpl) Update(ctx context.Context, payload *subscription.Subsc
 		}
 	}
 
-	return r.mapFromEnt(sub), nil
+	return r.mapFromEnt(ctx, sub), nil
 }
 
 // Create implements subscription.Repository.
@@ -108,7 +105,7 @@ func (r *repositoryImpl) Create(ctx context.Context, payload *subscription.Subsc
 		}
 	}
 
-	return r.mapFromEnt(subEnt), nil
+	return r.mapFromEnt(ctx, subEnt), nil
 }
 
 // List implements subscription.Repository.
@@ -118,31 +115,25 @@ func (r *repositoryImpl) List(ctx context.Context, filter *subscription.Subscrip
 	q := conn.Subscription.
 		Query()
 
-	if filter.IncludePlan {
-		q = q.WithPlan()
-	}
-
-	if filter.IncludeTenant {
-		q = q.WithTenant()
-	}
+	r.applyFilter(&q, filter)
 
 	subs, err := q.All(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return r.mapFromEnts(subs), nil
+	return r.mapFromEnts(ctx, subs), nil
 }
 
-func (r *repositoryImpl) mapFromEnts(es []*ent.Subscription) []*subscription.Subscription {
+func (r *repositoryImpl) mapFromEnts(ctx context.Context, es []*ent.Subscription) []*subscription.Subscription {
 	var result []*subscription.Subscription
 	for _, e := range es {
-		result = append(result, r.mapFromEnt(e))
+		result = append(result, r.mapFromEnt(ctx, e))
 	}
 	return result
 }
 
-func (r *repositoryImpl) mapFromEnt(s *ent.Subscription) *subscription.Subscription {
+func (r *repositoryImpl) mapFromEnt(ctx context.Context, s *ent.Subscription) *subscription.Subscription {
 	var mappedPlan *plan.Plan
 	if s.Edges.Plan != nil {
 		mappedPlan = &plan.Plan{
@@ -171,12 +162,59 @@ func (r *repositoryImpl) mapFromEnt(s *ent.Subscription) *subscription.Subscript
 		}
 	}
 
+	var mappedPayment *payment.Payment
+	payments := s.Edges.Payments
+	if len(payments) > 0 {
+		pymnt := payments[0]
+
+		pymntMethod, err := pymnt.QueryPaymentMethod().Only(ctx)
+		if err != nil {
+			return nil
+		}
+
+		methodType, err := pymntMethod.QueryPaymentMethodType().Only(ctx)
+		if err != nil {
+			return nil
+		}
+
+		mappedPayment = &payment.Payment{
+			ID:            pymnt.ID,
+			UserID:        *pymnt.UserID,
+			TenantID:      pymnt.TenantID,
+			ReferenceID:   *pymnt.ReferenceID,
+			ReferenceType: payment.ReferenceType(*pymnt.ReferenceType),
+			Amount:        *pymnt.Amount,
+			Currency:      payment.Currency(*pymnt.Currency),
+			Status:        payment.Status(*pymnt.Status),
+			Method: &paymentmethod.PaymentMethod{
+				ID:       pymnt.ID,
+				TenantID: pymnt.TenantID,
+				TypeID:   *pymntMethod.PaymentMethodTypeID,
+				Type: &paymentmethodtype.PaymentMethodType{
+					ID:          methodType.ID,
+					Name:        *methodType.Name,
+					DisplayName: *methodType.DisplayName,
+					Status:      paymentmethodtype.Status(*methodType.Status),
+					CreatedAt:   methodType.CreatedAt,
+					UpdatedAt:   methodType.UpdatedAt,
+				},
+				Metadata:  pymntMethod.Metadata,
+				CreatedAt: pymntMethod.CreatedAt,
+				UpdatedAt: pymntMethod.UpdatedAt,
+			},
+			PaidAt:    pymnt.PaidAt,
+			CreatedAt: pymnt.CreatedAt,
+			UpdatedAt: pymnt.UpdatedAt,
+		}
+	}
+
 	return &subscription.Subscription{
 		ID:        s.ID,
 		PlanID:    s.PlanID,
 		Plan:      mappedPlan,
 		TenantID:  s.TenantID,
 		Tenant:    mappedTenant,
+		Payment:   mappedPayment,
 		StartDate: s.StartDate,
 		EndDate:   s.EndDate,
 		Status:    subscription.SubscriptionStatus(s.Status),
@@ -193,6 +231,25 @@ func (r *repositoryImpl) setActivePlan(ctx context.Context, tenantID uuid.UUID, 
 	}
 
 	return r.redisClient.Set(ctx, cacheKey, planID.String(), expiration).Err()
+}
+
+func (r *repositoryImpl) applyFilter(q **ent.SubscriptionQuery, filter *subscription.SubscriptionFilter) {
+	if filter == nil {
+		return
+	}
+
+	if filter.IncludePlan {
+		*q = (*q).WithPlan()
+	}
+
+	if filter.IncludeTenant {
+		*q = (*q).WithTenant()
+	}
+
+	if filter.IncludePayment {
+		*q = (*q).WithPayments()
+	}
+
 }
 
 func NewRepository(client *db.Client, redisClient *db.RedisClient) subscription.Repository {

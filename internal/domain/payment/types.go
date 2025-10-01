@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	paymentmethod "github.com/umardev500/go-laundry/internal/domain/payment_method"
 )
 
 // ReferenceType represents the type of payment reference
@@ -31,17 +32,18 @@ const (
 )
 
 type Payment struct {
-	ID            uuid.UUID     `json:"id"`
-	UserID        uuid.UUID     `json:"user_id"`
-	TenantID      *uuid.UUID    `json:"tenant_id"`
-	ReferenceID   uuid.UUID     `json:"reference_id"`
-	ReferenceType ReferenceType `json:"reference_type"`
-	Amount        float64       `json:"amount"`
-	Currency      Currency      `json:"currency"`
-	Status        Status        `json:"status"`
-	PaidAt        *time.Time    `json:"paid_at"`
-	CreatedAt     time.Time     `json:"created_at"`
-	UpdatedAt     time.Time     `json:"updated_at"`
+	ID            uuid.UUID                    `json:"id"`
+	UserID        uuid.UUID                    `json:"user_id"`
+	TenantID      *uuid.UUID                   `json:"tenant_id"`
+	ReferenceID   uuid.UUID                    `json:"reference_id"`
+	ReferenceType ReferenceType                `json:"reference_type"`
+	Amount        float64                      `json:"amount"`
+	Currency      Currency                     `json:"currency"`
+	Status        Status                       `json:"status"`
+	Method        *paymentmethod.PaymentMethod `json:"method"`
+	PaidAt        *time.Time                   `json:"paid_at"`
+	CreatedAt     time.Time                    `json:"created_at"`
+	UpdatedAt     time.Time                    `json:"updated_at"`
 }
 
 type PaymentCreate struct {

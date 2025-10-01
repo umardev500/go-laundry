@@ -34,12 +34,13 @@ type Subscription struct {
 }
 
 type SubscriptionFilter struct {
-	IncludePlan   bool
-	IncludeTenant bool
+	IncludePlan    bool `query:"include_plan"`
+	IncludeTenant  bool `query:"include_tenant"`
+	IncludePayment bool `query:"include_payment"`
 }
 
-func (f SubscriptionFilter) WithDefaults() SubscriptionFilter {
-	return f
+func (f SubscriptionFilter) WithDefaults() *SubscriptionFilter {
+	return &f
 }
 
 type SubscriptionCreate struct {
