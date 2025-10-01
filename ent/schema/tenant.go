@@ -74,5 +74,9 @@ func (Tenant) Edges() []ent.Edge {
 			Annotations(
 				entsql.OnDelete(entsql.Cascade),
 			),
+
+		edge.To("addresses", Addresses.Type).Annotations(
+			entsql.OnDelete(entsql.Cascade),
+		),
 	}
 }
