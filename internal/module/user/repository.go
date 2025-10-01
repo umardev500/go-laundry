@@ -131,7 +131,8 @@ func (r *repositoryImpl) Delete(ctx context.Context, tenantID *uuid.UUID, userID
 
 	q := conn.User.
 		Update().
-		Where(userEntity.IDEQ(userID))
+		Where(userEntity.IDEQ(userID)).
+		Where(userEntity.IDNEQ(userID))
 
 	if tenantID != nil {
 		q = q.Where(userEntity.TenantIDEQ(*tenantID))
@@ -224,7 +225,8 @@ func (r *repositoryImpl) PurgeUser(ctx context.Context, tenantID *uuid.UUID, use
 
 	q := conn.User.
 		Delete().
-		Where(userEntity.IDEQ(userID))
+		Where(userEntity.IDEQ(userID)).
+		Where(userEntity.IDNEQ(userID))
 
 	if tenantID != nil {
 		q = q.Where(userEntity.TenantIDEQ(*tenantID))
