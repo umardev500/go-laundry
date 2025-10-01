@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"time"
+
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -27,6 +29,21 @@ func (Addresses) Fields() []ent.Field {
 			Immutable().
 			Optional().
 			Nillable(),
+
+		field.String("zip_code").
+			NotEmpty().
+			Nillable(),
+
+		field.Bool("is_default").
+			Default(false),
+
+		field.Time("created_at").
+			Default(time.Now).
+			Immutable(),
+
+		field.Time("updated_at").
+			Default(time.Now).
+			UpdateDefault(time.Now),
 	}
 }
 
