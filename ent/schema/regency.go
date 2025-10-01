@@ -19,6 +19,12 @@ func (Regency) Fields() []ent.Field {
 			MaxLen(2).
 			NotEmpty().
 			Unique(),
+
+		field.String("province_id").
+			MaxLen(2).
+			NotEmpty().
+			Unique(),
+
 		field.String("name").
 			NotEmpty(),
 	}
@@ -29,6 +35,8 @@ func (Regency) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("province", Province.Type).
 			Ref("regencies").
+			Field("province_id").
+			Required().
 			Unique(),
 
 		edge.To("districts", District.Type).Annotations(

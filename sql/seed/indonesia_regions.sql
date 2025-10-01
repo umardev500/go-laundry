@@ -1,8 +1,8 @@
-DROP TABLE IF EXISTS "provinces";
-CREATE TABLE "provinces" (
-  id CHAR(2) PRIMARY KEY,
-  name VARCHAR(255) NOT NULL
-);
+-- DROP TABLE IF EXISTS "provinces" CASCADE;
+-- CREATE TABLE "provinces" (
+--   id CHAR(2) PRIMARY KEY,
+--   name VARCHAR(255) NOT NULL
+-- );
 
 INSERT INTO "provinces" VALUES
 ('11', 'ACEH'),
@@ -43,15 +43,15 @@ INSERT INTO "provinces" VALUES
 ('94', 'PAPUA TENGAH'),
 ('95', 'PAPUA PEGUNUNGAN');
 
-DROP TABLE IF EXISTS "regencies";
-CREATE TABLE "regencies" (
-  id CHAR(4) PRIMARY KEY,
-  province_id CHAR(2) NOT NULL,
-  name VARCHAR(255) NOT NULL,
-  CONSTRAINT fk_province FOREIGN KEY (province_id) REFERENCES provinces(id)
-);
+-- DROP TABLE IF EXISTS "regencies" CASCADE;
+-- CREATE TABLE "regencies" (
+--   id CHAR(4) PRIMARY KEY,
+--   province_id CHAR(2) NOT NULL,
+--   name VARCHAR(255) NOT NULL,
+--   CONSTRAINT fk_province FOREIGN KEY (province_id) REFERENCES provinces(id)
+-- );
 
-INSERT INTO "regencies" VALUES
+INSERT INTO "regencies" ("id", "province_id", "name") VALUES
 ('1101', '11', 'KAB. ACEH SELATAN'),
 ('1102', '11', 'KAB. ACEH TENGGARA'),
 ('1103', '11', 'KAB. ACEH TIMUR'),
@@ -567,15 +567,15 @@ INSERT INTO "regencies" VALUES
 ('9507', '95', 'KAB. LANNY JAYA'),
 ('9508', '95', 'KAB. NDUGA');
 
-DROP TABLE IF EXISTS "districts";
-CREATE TABLE "districts" (
-  id CHAR(6) PRIMARY KEY,
-  regency_id CHAR(4) NOT NULL,
-  name VARCHAR(255) NOT NULL,
-  CONSTRAINT fk_regency FOREIGN KEY (regency_id) REFERENCES regencies(id)
-);
+-- DROP TABLE IF EXISTS "districts" CASCADE;
+-- CREATE TABLE "districts" (
+--   id CHAR(6) PRIMARY KEY,
+--   regency_id CHAR(4) NOT NULL,
+--   name VARCHAR(255) NOT NULL,
+--   CONSTRAINT fk_regency FOREIGN KEY (regency_id) REFERENCES regencies(id)
+-- );
 
-INSERT INTO "districts" VALUES
+INSERT INTO "districts" ("id", "regency_id", "name") VALUES
 ('110101', '1101', 'Bakongan'),
 ('110102', '1101', 'Kluet Utara'),
 ('110103', '1101', 'Kluet Selatan'),
@@ -7854,15 +7854,15 @@ INSERT INTO "districts" VALUES
 ('950831', '9508', 'Krepkuri'),
 ('950832', '9508', 'Pasir Putih');
 
-DROP TABLE IF EXISTS "villages";
-CREATE TABLE "villages" (
-  id CHAR(10) PRIMARY KEY,
-  district_id CHAR(6) NOT NULL,
-  name VARCHAR(255) NOT NULL,
-  CONSTRAINT fk_district FOREIGN KEY (district_id) REFERENCES districts(id)
-);
+-- DROP TABLE IF EXISTS "villages" CASCADE;
+-- CREATE TABLE "villages" (
+--   id CHAR(10) PRIMARY KEY,
+--   district_id CHAR(6) NOT NULL,
+--   name VARCHAR(255) NOT NULL,
+--   CONSTRAINT fk_district FOREIGN KEY (district_id) REFERENCES districts(id)
+-- );
 
-INSERT INTO "villages" VALUES
+INSERT INTO "villages" ("id", "district_id", "name") VALUES
 ('1101012001', '110101', 'Keude Bakongan'),
 ('1101012002', '110101', 'Ujong Mangki'),
 ('1101012003', '110101', 'Ujong Padang'),

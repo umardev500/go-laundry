@@ -19,6 +19,12 @@ func (Village) Fields() []ent.Field {
 			MaxLen(2).
 			NotEmpty().
 			Unique(),
+
+		field.String("district_id").
+			MaxLen(2).
+			NotEmpty().
+			Unique(),
+
 		field.String("name").
 			NotEmpty(),
 	}
@@ -29,6 +35,8 @@ func (Village) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("district", District.Type).
 			Ref("villages").
+			Field("district_id").
+			Required().
 			Unique(),
 
 		edge.To("addresses", Addresses.Type).Annotations(

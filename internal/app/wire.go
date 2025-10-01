@@ -14,6 +14,7 @@ import (
 	paymentmethodtype "github.com/umardev500/go-laundry/internal/module/payment_method_type"
 	"github.com/umardev500/go-laundry/internal/module/permission"
 	"github.com/umardev500/go-laundry/internal/module/plan"
+	"github.com/umardev500/go-laundry/internal/module/region"
 	"github.com/umardev500/go-laundry/internal/module/registration"
 	"github.com/umardev500/go-laundry/internal/module/role"
 	"github.com/umardev500/go-laundry/internal/module/subscription"
@@ -43,6 +44,7 @@ var AppSet = wire.NewSet(
 	payment.ProviderSet,
 	paymentmethodtype.ProviderSet,
 	paymentmethod.ProviderSet,
+	region.ProviderSet,
 )
 
 func InitApp(cfg *config.Config) (*App, error) {

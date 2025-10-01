@@ -7,6 +7,7 @@ import (
 	paymentmethod "github.com/umardev500/go-laundry/internal/module/payment_method"
 	paymentmethodtype "github.com/umardev500/go-laundry/internal/module/payment_method_type"
 	"github.com/umardev500/go-laundry/internal/module/plan"
+	"github.com/umardev500/go-laundry/internal/module/region"
 	"github.com/umardev500/go-laundry/internal/module/registration"
 	"github.com/umardev500/go-laundry/internal/module/role"
 	"github.com/umardev500/go-laundry/internal/module/subscription"
@@ -23,6 +24,7 @@ func NewFiberApp(
 	paymentHandler *payment.Handler,
 	paymentMethodHandler *paymentmethod.Handler,
 	paymentMethodTypeHandler *paymentmethodtype.Handler,
+	provinceHandler *region.Handler,
 ) *fiber.App {
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
@@ -39,6 +41,7 @@ func NewFiberApp(
 	paymentHandler.SetupRoutes(api)
 	paymentMethodTypeHandler.SetupRoutes(api)
 	paymentMethodHandler.SetupRoutes(api)
+	provinceHandler.SetupRoutes(api)
 
 	return app
 }
