@@ -2,7 +2,6 @@ package region
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/umardev500/go-laundry/internal/domain/region"
 	"github.com/umardev500/go-laundry/internal/types"
@@ -34,8 +33,6 @@ func (s *serviceImpl) ListRegenciesByProvince(ctx context.Context, provinceID st
 
 	page := f.Offset + 1
 	totalPages := utils.CalculateTotalPages(pd.Total, f.Limit)
-
-	fmt.Println(totalPages, pd.Total, f.Limit)
 
 	return &types.PageResult[region.Regency]{
 		Data: pd.Data,

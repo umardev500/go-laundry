@@ -2,7 +2,6 @@ package role
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/ent"
@@ -66,7 +65,6 @@ func (r *repositoryImpl) Create(ctx context.Context, payload *role.RoleCreate, t
 		SetNillableDescription(payload.Description).
 		Save(ctx)
 	if err != nil {
-		fmt.Println("failed:", err)
 		return nil, err
 	}
 
