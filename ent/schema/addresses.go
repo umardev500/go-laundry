@@ -30,6 +30,10 @@ func (Addresses) Fields() []ent.Field {
 			Optional().
 			Nillable(),
 
+		field.String("street").
+			NotEmpty().
+			Nillable(),
+
 		field.String("zip_code").
 			NotEmpty().
 			Nillable(),

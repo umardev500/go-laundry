@@ -109,7 +109,6 @@ func (r *repositoryImpl) CreateProfile(ctx context.Context, userID uuid.UUID, u 
 		SetName(u.Name).
 		SetNillableAvatar(u.Avatar).
 		SetNillablePhone(u.Phone).
-		SetNillableAddress(u.Address).
 		Save(ctx)
 	if err != nil {
 		return nil, err
@@ -120,7 +119,6 @@ func (r *repositoryImpl) CreateProfile(ctx context.Context, userID uuid.UUID, u 
 		Name:    *profile.Name,
 		Avatar:  profile.Avatar,
 		Phone:   profile.Phone,
-		Address: profile.Address,
 		Created: profile.CreatedAt,
 		Updated: profile.UpdatedAt,
 	}
@@ -254,7 +252,6 @@ func (r *repositoryImpl) UpdateProfile(ctx context.Context, userID uuid.UUID, u 
 		SetNillableName(u.Name).
 		SetNillableAvatar(u.Avatar).
 		SetNillablePhone(u.Phone).
-		SetNillableAddress(u.Address).
 		Save(ctx)
 	if err != nil {
 		return nil, err
@@ -265,7 +262,6 @@ func (r *repositoryImpl) UpdateProfile(ctx context.Context, userID uuid.UUID, u 
 		Name:    *profile.Name,
 		Avatar:  profile.Avatar,
 		Phone:   profile.Phone,
-		Address: profile.Address,
 		Created: profile.CreatedAt,
 		Updated: profile.UpdatedAt,
 	}

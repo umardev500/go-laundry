@@ -72,15 +72,13 @@ type Profile struct {
 }
 
 type ProfileCreate struct {
-	Name    string
-	Avatar  *string
-	Phone   *string
-	Address *string
+	Name   string
+	Avatar *string
+	Phone  *string
 }
 
 type ProfileUpdate struct {
-	Name    *string
-	Avatar  *string
-	Phone   *string
-	Address *string
+	Name   *string
+	Avatar *string
+	Phone  *string
 }

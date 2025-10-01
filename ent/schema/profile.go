@@ -33,10 +33,6 @@ func (Profile) Fields() []ent.Field {
 			Optional().
 			Nillable(),
 
-		field.String("address").
-			Optional().
-			Nillable(),
-
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable(),
