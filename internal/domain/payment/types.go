@@ -70,5 +70,18 @@ type PaymentFilter struct {
 }
 
 func (p PaymentFilter) WithDefaults() PaymentFilter {
-	return p
+	return PaymentFilter{
+		Status: func() *Status {
+			if *p.Status == "" {
+				return nil
+			}
+			return p.Status
+		}(),
+		Type: func() *ReferenceType {
+			if *p.Type == "" {
+				return nil
+			}
+			return p.Type
+		}(),
+	}
 }

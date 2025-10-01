@@ -2,6 +2,7 @@ package payment
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/ent"
@@ -65,6 +66,7 @@ func (r *repositoryImpl) List(ctx context.Context, filter *payment.PaymentFilter
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(pymnts)
 
 	return r.mapFromEnts(pymnts), nil
 }
