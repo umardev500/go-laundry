@@ -11,6 +11,7 @@ import (
 	"github.com/umardev500/go-laundry/internal/module/registration"
 	"github.com/umardev500/go-laundry/internal/module/role"
 	"github.com/umardev500/go-laundry/internal/module/subscription"
+	"github.com/umardev500/go-laundry/internal/module/upload"
 	"github.com/umardev500/go-laundry/internal/module/user"
 )
 
@@ -25,10 +26,13 @@ func NewFiberApp(
 	paymentMethodHandler *paymentmethod.Handler,
 	paymentMethodTypeHandler *paymentmethodtype.Handler,
 	provinceHandler *region.Handler,
+	uploadHandler *upload.Handler,
 ) *fiber.App {
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
 	})
+
+	app.Static("/uploads", "./uploads")
 
 	api := app.Group("/api")
 
@@ -42,6 +46,7 @@ func NewFiberApp(
 	paymentMethodTypeHandler.SetupRoutes(api)
 	paymentMethodHandler.SetupRoutes(api)
 	provinceHandler.SetupRoutes(api)
+	uploadHandler.SetupRoutes(api)
 
 	return app
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/umardev500/go-laundry/internal/module/role"
 	"github.com/umardev500/go-laundry/internal/module/subscription"
 	"github.com/umardev500/go-laundry/internal/module/tenant"
+	"github.com/umardev500/go-laundry/internal/module/upload"
 	"github.com/umardev500/go-laundry/internal/module/user"
 	"github.com/umardev500/go-laundry/internal/seed"
 	"github.com/umardev500/go-laundry/internal/types"
@@ -45,6 +46,7 @@ var AppSet = wire.NewSet(
 	paymentmethodtype.ProviderSet,
 	paymentmethod.ProviderSet,
 	region.ProviderSet,
+	upload.ProvidertSet,
 )
 
 func InitApp(cfg *config.Config) (*App, error) {
