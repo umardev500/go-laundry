@@ -49,7 +49,6 @@ func (r *repositoryImpl) Update(ctx context.Context, payload *subscription.Subsc
 		SetNillableStartDate(payload.StartDate).
 		SetNillableEndDate(payload.EndDate).
 		SetNillableStatus((*subscriptionEntity.Status)(payload.Status)).
-		SetUpdatedBy(userID).
 		Save(ctx)
 
 	if err != nil {

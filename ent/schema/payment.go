@@ -48,11 +48,6 @@ func (Payment) Fields() []ent.Field {
 			Optional().
 			Nillable(),
 
-		field.UUID("admin_id", uuid.UUID{}).
-			Optional().
-			Nillable().
-			Comment("Admin who processed the payment"),
-
 		// Details
 		field.Float("amount").
 			Default(0.0).

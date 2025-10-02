@@ -27,8 +27,7 @@ func (r *repositoryImpl) Update(ctx context.Context, payload *payment.PaymentUpd
 		SetNillableProofURL(payload.ProofURL).
 		SetNillableAmount(payload.Amount).
 		SetNillableStatus((*paymentEntity.Status)(payload.Status)).
-		SetNillablePaidAt(payload.PaidAt).
-		SetAdminID(userID)
+		SetNillablePaidAt(payload.PaidAt)
 
 	pymnt, err := builder.Save(ctx)
 	if err != nil {
@@ -172,7 +171,6 @@ func (r *repositoryImpl) mapFromEnt(e *ent.Payment) *payment.Payment {
 		ProofURL:      e.ProofURL,
 		Status:        payment.Status(*e.Status),
 		Method:        mappedMethod,
-		AdminID:       e.AdminID,
 		PaidAt:        e.PaidAt,
 		CreatedAt:     e.CreatedAt,
 		UpdatedAt:     e.UpdatedAt,

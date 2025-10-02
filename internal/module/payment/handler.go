@@ -49,7 +49,7 @@ func (h *Handler) ProcessPayment(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(uuid.UUID)
 	tenantID := fiberutils.GetTenantIDfromCtx(c)
 
-	result, err := h.paymentOrchestrator.ProcessPayment(c.Context(), userID, id, tenantID)
+	result, err := h.paymentOrchestrator.ProcessPayment(c.Context(), id, userID, tenantID)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
 			Success: false,

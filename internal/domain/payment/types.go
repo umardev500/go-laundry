@@ -42,7 +42,6 @@ type Payment struct {
 	Status        Status                       `json:"status"`
 	Method        *paymentmethod.PaymentMethod `json:"method"`
 	ProofURL      *string                      `json:"proof_url"`
-	AdminID       *uuid.UUID                   `json:"admin_id"`
 	PaidAt        *time.Time                   `json:"paid_at"`
 	CreatedAt     time.Time                    `json:"created_at"`
 	UpdatedAt     time.Time                    `json:"updated_at"`

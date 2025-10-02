@@ -40,10 +40,6 @@ func (Subscription) Fields() []ent.Field {
 			Values("active", "inactive", "pending", "cancelled", "suspended").
 			Default("pending"),
 
-		field.UUID("updated_by", uuid.UUID{}).
-			Optional().
-			Nillable(),
-
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable(),
