@@ -74,7 +74,7 @@ func (h *Handler) list(c *fiber.Ctx) error {
 
 	tenantID := fiberutils.GetTenantIDfromCtx(c)
 
-	data, err := h.service.List(c.Context(), tenantID, filter)
+	result, err := h.service.List(c.Context(), tenantID, filter)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(response.APIResponse[any]{
@@ -84,9 +84,10 @@ func (h *Handler) list(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(response.APIResponse[[]*domain.Category]{
-		Success: true,
-		Message: "Categories fetched",
-		Data:    data,
+		Success:    true,
+		Message:    "Categories fetched",
+		Data:       result.Data,
+		Pagination: result.Pagination,
 	})
 }
 

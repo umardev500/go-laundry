@@ -5,6 +5,9 @@ import (
 
 	"github.com/google/uuid"
 	domain "github.com/umardev500/go-laundry/internal/domain/category"
+	"github.com/umardev500/go-laundry/internal/types"
+	"github.com/umardev500/go-laundry/internal/utils"
+	"github.com/umardev500/go-laundry/pkg/response"
 )
 
 type serviceImpl struct {
@@ -30,9 +33,27 @@ func (s *serviceImpl) GetByID(ctx context.Context, tenantID *uuid.UUID, id uuid.
 }
 
 // List retrieves categories matching the filter (optionally tenant scoped)
-func (s *serviceImpl) List(ctx context.Context, tenantID *uuid.UUID, filter domain.Filter) ([]*domain.Category, error) {
-	filter = filter.WithDefaults()
-	return s.repo.List(ctx, tenantID, filter)
+func (s *serviceImpl) List(ctx context.Context, tenantID *uuid.UUID, f domain.Filter) (*types.PageResult[domain.Category], error) {
+	f = f.WithDefaults()
+	result, err := s.repo.List(ctx, tenantID, f)
+	if err != nil {
+		return nil, err
+	}
+
+	page := f.Offset + 1
+	totalPages := utils.CalculateTotalPages(result.Total, f.Limit)
+
+	return &types.PageResult[domain.Category]{
+		Data: result.Data,
+		Pagination: &response.Pagination{
+			Page:       page,
+			PageSize:   f.Limit,
+			TotalItems: result.Total,
+			TotalPages: totalPages,
+			HasNext:    f.Offset+1 < totalPages,
+			HasPrev:    f.Offset > 1,
+		},
+	}, nil
 }
 
 // Update modifies an existing category

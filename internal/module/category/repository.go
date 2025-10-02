@@ -9,6 +9,7 @@ import (
 	categoryEnt "github.com/umardev500/go-laundry/ent/category"
 	"github.com/umardev500/go-laundry/internal/db"
 	domain "github.com/umardev500/go-laundry/internal/domain/category"
+	"github.com/umardev500/go-laundry/internal/types"
 )
 
 type repositoryImpl struct {
@@ -54,7 +55,7 @@ func (r *repositoryImpl) GetByID(ctx context.Context, tenantID *uuid.UUID, id uu
 	return mapFromEnt(catEnt), nil
 }
 
-func (r *repositoryImpl) List(ctx context.Context, tenantID *uuid.UUID, filter domain.Filter) ([]*domain.Category, error) {
+func (r *repositoryImpl) List(ctx context.Context, tenantID *uuid.UUID, filter domain.Filter) (*types.PageData[domain.Category], error) {
 	conn := r.client.GetConn(ctx)
 
 	q := conn.Category.Query()
@@ -63,6 +64,11 @@ func (r *repositoryImpl) List(ctx context.Context, tenantID *uuid.UUID, filter d
 	}
 	if filter.Query != "" {
 		q = q.Where(categoryEnt.NameContainsFold(filter.Query))
+	}
+
+	total, err := q.Count(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	switch filter.OrderBy {
@@ -86,7 +92,10 @@ func (r *repositoryImpl) List(ctx context.Context, tenantID *uuid.UUID, filter d
 		result[i] = mapFromEnt(e)
 	}
 
-	return result, nil
+	return &types.PageData[domain.Category]{
+		Data:  result,
+		Total: total,
+	}, nil
 }
 
 func (r *repositoryImpl) Update(ctx context.Context, tenantID *uuid.UUID, id uuid.UUID, payload *domain.Update) (*domain.Category, error) {
