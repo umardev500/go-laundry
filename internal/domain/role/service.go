@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/umardev500/go-laundry/internal/types"
 )
 
 type Service interface {
@@ -17,5 +18,5 @@ type Service interface {
 	GetRoleByName(ctx context.Context, name string, tenantID *uuid.UUID) (*Role, error)
 
 	// ListRoles fetches all roles for a tenant
-	ListRoles(ctx context.Context, tenantID *uuid.UUID) ([]*Role, error)
+	ListRoles(ctx context.Context, filter *Filter, tenantID *uuid.UUID) (*types.PageResult[Role], error)
 }

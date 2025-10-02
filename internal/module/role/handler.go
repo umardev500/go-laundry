@@ -9,6 +9,7 @@ import (
 	"github.com/umardev500/go-laundry/internal/config"
 	"github.com/umardev500/go-laundry/internal/domain/role"
 	"github.com/umardev500/go-laundry/internal/module/role/dto"
+	"github.com/umardev500/go-laundry/internal/utils/fiberutils"
 	"github.com/umardev500/go-laundry/pkg/response"
 	"github.com/umardev500/go-laundry/pkg/validator"
 )
@@ -75,17 +76,15 @@ func (h *Handler) CreateRole(c *fiber.Ctx) error {
 }
 
 func (h *Handler) ListRoles(c *fiber.Ctx) error {
-	// userID := c.Locals("user_id").(uuid.UUID)
-	var tenantIDPtr *uuid.UUID
-	if val := c.Locals("tenant_id"); val != nil {
-		if id, ok := val.(uuid.UUID); ok && id != uuid.Nil {
-			tenantIDPtr = func() *uuid.UUID {
-				return &id
-			}()
-		}
+	var tenantID = fiberutils.GetTenantIDfromCtx(c)
+	var filter role.Filter
+	if err := c.QueryParser(&filter); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
 	}
 
-	roles, err := h.service.ListRoles(c.Context(), tenantIDPtr)
+	result, err := h.service.ListRoles(c.Context(), &filter, tenantID)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
@@ -93,8 +92,9 @@ func (h *Handler) ListRoles(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(response.APIResponse[[]*role.Role]{
-		Success: true,
-		Message: "Roles fetched successfully",
-		Data:    roles,
+		Success:    true,
+		Message:    "Roles fetched successfully",
+		Data:       result.Data,
+		Pagination: result.Pagination,
 	})
 }

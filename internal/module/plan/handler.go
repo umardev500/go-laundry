@@ -82,12 +82,12 @@ func (h *Handler) GetByID(c *fiber.Ctx) error {
 	includeDeleted := c.QueryBool("include_deleted", false)
 	IncludePermissions := c.QueryBool("include_permissions", false)
 
-	filter := plan.PlanFilter{
+	filter := plan.Filter{
 		IncludeDeleted:     includeDeleted,
 		IncludePermissions: IncludePermissions,
 	}.WithDefaults()
 
-	planData, err := h.service.GetByID(c.Context(), planID, &filter)
+	planData, err := h.service.GetByID(c.Context(), planID, filter)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
 			Success: false,
@@ -107,12 +107,12 @@ func (h *Handler) List(c *fiber.Ctx) error {
 	includeDeleted := c.QueryBool("include_deleted", false)
 	IncludePermissions := c.QueryBool("include_permissions", false)
 
-	filter := plan.PlanFilter{
+	filter := plan.Filter{
 		IncludeDeleted:     includeDeleted,
 		IncludePermissions: IncludePermissions,
 	}.WithDefaults()
 
-	plans, err := h.service.List(c.Context(), &filter)
+	plans, err := h.service.List(c.Context(), filter)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(response.APIResponse[any]{
 			Success: false,

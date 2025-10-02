@@ -7,6 +7,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/ent"
 	"github.com/umardev500/go-laundry/internal/domain/role"
+	"github.com/umardev500/go-laundry/internal/types"
+	"github.com/umardev500/go-laundry/internal/utils"
+	"github.com/umardev500/go-laundry/pkg/response"
 )
 
 type serviceImpl struct {
@@ -49,8 +52,28 @@ func (s *serviceImpl) GetRoleByName(ctx context.Context, name string, tenantID *
 }
 
 // ListRoles implements role.Service.
-func (s *serviceImpl) ListRoles(ctx context.Context, tenantID *uuid.UUID) ([]*role.Role, error) {
-	return s.repo.List(ctx, tenantID)
+func (s *serviceImpl) ListRoles(ctx context.Context, f *role.Filter, tenantID *uuid.UUID) (*types.PageResult[role.Role], error) {
+	f = f.WithDefaults()
+
+	result, err := s.repo.List(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	page := f.Offset + 1
+	totalPages := utils.CalculateTotalPages(result.Total, f.Limit)
+
+	return &types.PageResult[role.Role]{
+		Data: result.Data,
+		Pagination: &response.Pagination{
+			Page:       page,
+			PageSize:   f.Limit,
+			TotalItems: result.Total,
+			TotalPages: totalPages,
+			HasNext:    f.Offset+1 < totalPages,
+			HasPrev:    f.Offset > 1,
+		},
+	}, nil
 }
 
 func NewService(repo role.Repository) role.Service {

@@ -96,7 +96,7 @@ func (s *serviceImpl) Create(
 	payload *subscription.SubscriptionCreate,
 ) (*subscription.Subscription, error) {
 	var sub *subscription.Subscription
-	planData, err := s.planService.GetByID(ctx, payload.PlanID, &plan.PlanFilter{
+	planData, err := s.planService.GetByID(ctx, payload.PlanID, &plan.Filter{
 		IncludePermissions: false,
 		IncludeDeleted:     false,
 	})

@@ -27,12 +27,12 @@ func (s *serviceImpl) ReplacePermissions(ctx context.Context, planID uuid.UUID, 
 }
 
 // GetByID implements plan.Service.
-func (s *serviceImpl) GetByID(ctx context.Context, id uuid.UUID, filter *plan.PlanFilter) (*plan.Plan, error) {
+func (s *serviceImpl) GetByID(ctx context.Context, id uuid.UUID, filter *plan.Filter) (*plan.Plan, error) {
 	return s.repo.GetByID(ctx, id, filter)
 }
 
 // List implements plan.Service.
-func (s *serviceImpl) List(ctx context.Context, filter *plan.PlanFilter) ([]*plan.Plan, error) {
+func (s *serviceImpl) List(ctx context.Context, filter *plan.Filter) ([]*plan.Plan, error) {
 	return s.repo.List(ctx, filter)
 }
 

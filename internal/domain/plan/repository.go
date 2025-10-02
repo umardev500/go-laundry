@@ -11,10 +11,10 @@ type Repository interface {
 	AddPermissions(ctx context.Context, planID uuid.UUID, permissionIDs []uuid.UUID) error
 
 	// GetByID retrieves a plan by its ID and the provided filter.
-	GetByID(ctx context.Context, id uuid.UUID, filter *PlanFilter) (*Plan, error)
+	GetByID(ctx context.Context, id uuid.UUID, filter *Filter) (*Plan, error)
 
 	// List retrieves all plans based on the provided filter.
-	List(ctx context.Context, filter *PlanFilter) ([]*Plan, error)
+	List(ctx context.Context, filter *Filter) ([]*Plan, error)
 
 	// RemovePermissions detaches a list of permission from a plan.
 	RemovePermissions(ctx context.Context, planID uuid.UUID, permissionIDs []uuid.UUID) error

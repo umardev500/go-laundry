@@ -151,7 +151,7 @@ func (r *repositoryImpl) AddPermissions(ctx context.Context, planID uuid.UUID, p
 }
 
 // GetByID implements plan.Repository.
-func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID, filter *plan.PlanFilter) (*plan.Plan, error) {
+func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID, filter *plan.Filter) (*plan.Plan, error) {
 	conn := r.client.GetConn(ctx)
 
 	q := conn.Plan.Query()
@@ -173,7 +173,7 @@ func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID, filter *plan
 }
 
 // List implements plan.Repository.
-func (r *repositoryImpl) List(ctx context.Context, filter *plan.PlanFilter) ([]*plan.Plan, error) {
+func (r *repositoryImpl) List(ctx context.Context, filter *plan.Filter) ([]*plan.Plan, error) {
 	conn := r.client.GetConn(ctx)
 
 	q := conn.Plan.Query()

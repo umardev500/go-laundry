@@ -10,6 +10,7 @@ import (
 	userEntity "github.com/umardev500/go-laundry/ent/user"
 	"github.com/umardev500/go-laundry/internal/db"
 	"github.com/umardev500/go-laundry/internal/domain/role"
+	"github.com/umardev500/go-laundry/internal/types"
 )
 
 type repositoryImpl struct {
@@ -98,7 +99,7 @@ func (r *repositoryImpl) FindByName(ctx context.Context, name string, tenantID *
 }
 
 // List implements role.Repository.
-func (r *repositoryImpl) List(ctx context.Context, tenantID *uuid.UUID) ([]*role.Role, error) {
+func (r *repositoryImpl) List(ctx context.Context, tenantID *uuid.UUID) (*types.PageData[role.Role], error) {
 	conn := r.client.GetConn(ctx)
 
 	query := conn.Role.Query()
@@ -106,6 +107,12 @@ func (r *repositoryImpl) List(ctx context.Context, tenantID *uuid.UUID) ([]*role
 		query = query.Where(roleEntity.HasTenantWith(tenant.IDEQ(*tenantID)))
 	} else {
 		query = query.Where(roleEntity.TenantIDIsNil())
+	}
+
+	// Count total
+	total, err := query.Count(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	entRoles, err := query.
@@ -123,7 +130,10 @@ func (r *repositoryImpl) List(ctx context.Context, tenantID *uuid.UUID) ([]*role
 		roles[i] = dest
 	}
 
-	return roles, nil
+	return &types.PageData[role.Role]{
+		Data:  roles,
+		Total: total,
+	}, nil
 }
 
 func (r *repositoryImpl) mapFromEnt(e *ent.Role, to *role.Role) {
