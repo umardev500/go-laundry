@@ -12,6 +12,7 @@ import (
 	userEntity "github.com/umardev500/go-laundry/ent/user"
 	"github.com/umardev500/go-laundry/internal/db"
 	"github.com/umardev500/go-laundry/internal/domain/user"
+	"github.com/umardev500/go-laundry/internal/types"
 )
 
 type repositoryImpl struct {
@@ -165,7 +166,7 @@ func (r *repositoryImpl) FindByEmail(ctx context.Context, email string) (*user.U
 }
 
 // List implements user.Repository.
-func (r *repositoryImpl) List(ctx context.Context, filter user.UserFilter) ([]*user.User, error) {
+func (r *repositoryImpl) List(ctx context.Context, filter user.UserFilter) (*types.PageData[user.User], error) {
 	conn := r.client.GetConn(ctx)
 
 	// Start building query
@@ -189,6 +190,12 @@ func (r *repositoryImpl) List(ctx context.Context, filter user.UserFilter) ([]*u
 				userEntity.HasProfileWith(profile.NameContainsFold(filter.Query)),
 			),
 		)
+	}
+
+	// Count total
+	total, err := q.Count(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	// Ordering
@@ -216,7 +223,10 @@ func (r *repositoryImpl) List(ctx context.Context, filter user.UserFilter) ([]*u
 
 	domainUsers := r.mapFromEnts(usersEnt)
 
-	return domainUsers, nil
+	return &types.PageData[user.User]{
+		Data:  domainUsers,
+		Total: total,
+	}, nil
 }
 
 // PurgeUser implements user.Repository.

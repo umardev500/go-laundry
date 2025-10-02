@@ -5,6 +5,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/internal/domain/user"
+	"github.com/umardev500/go-laundry/internal/types"
+	"github.com/umardev500/go-laundry/internal/utils"
+	"github.com/umardev500/go-laundry/pkg/response"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -41,12 +44,30 @@ func (s *serviceImpl) Update(ctx context.Context, userID uuid.UUID, payload *use
 }
 
 // List implements user.Service.
-func (s *serviceImpl) List(ctx context.Context, filter user.UserFilter) ([]*user.User, error) {
+func (s *serviceImpl) List(ctx context.Context, f user.UserFilter) (*types.PageResult[user.User], error) {
 	// Apply defaults
-	filter = filter.WithDefaults()
+	f = f.WithDefaults()
 
 	// Deletegate to repository
-	return s.repo.List(ctx, filter)
+	result, err := s.repo.List(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+
+	page := f.Offset + 1
+	totalPages := utils.CalculateTotalPages(result.Total, f.Limit)
+
+	return &types.PageResult[user.User]{
+		Data: result.Data,
+		Pagination: &response.Pagination{
+			Page:       page,
+			PageSize:   f.Limit,
+			TotalItems: result.Total,
+			TotalPages: totalPages,
+			HasNext:    f.Offset+1 < totalPages,
+			HasPrev:    f.Offset > 1,
+		},
+	}, nil
 }
 
 func NewService(repo user.Repository) user.Service {

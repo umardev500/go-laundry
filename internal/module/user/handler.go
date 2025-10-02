@@ -99,36 +99,16 @@ func (h *Handler) list(c *fiber.Ctx) error {
 	tenantIDPtr := fiberutils.GetTenantIDfromCtx(c)
 
 	// Parse query params
-	limit := c.QueryInt("limit", 10)
-	offset := c.QueryInt("offset", 0)
-	query := c.Query("query", "")
-	order := c.Query("order_by", "created_at desc")
-	includeDeleted := c.QueryBool("include_deleted", false)
-
-	// Map query string to UserOrderBy type
-	var orderBy user.UserOrderBy
-	switch order {
-	case "email_asc":
-		orderBy = user.OrderByEmailAsc
-	case "email_desc":
-		orderBy = user.OrderByEmailDesc
-	case "created_at_asc":
-		orderBy = user.OrderByCreatedAtAsc
-	default:
-		orderBy = user.OrderByCreatedAtDesc
+	var filter user.UserFilter
+	if err := c.QueryParser(&filter); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
 	}
 
-	// Map query string to UserFilter
-	filter := user.UserFilter{
-		TenantID:       tenantIDPtr,
-		Query:          query,
-		Limit:          limit,
-		Offset:         offset,
-		OrderBy:        orderBy,
-		IncludeDeleted: includeDeleted,
-	}.WithDefaults()
-
-	users, err := h.service.List(c.Context(), filter)
+	filter.TenantID = tenantIDPtr
+	result, err := h.service.List(c.Context(), filter)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(&response.APIResponse[any]{
 			Success: false,
@@ -137,9 +117,10 @@ func (h *Handler) list(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(response.APIResponse[[]*user.User]{
-		Success: true,
-		Message: "Users fetched successfully",
-		Data:    users,
+		Success:    true,
+		Message:    "Users fetched successfully",
+		Data:       result.Data,
+		Pagination: result.Pagination,
 	})
 }
 

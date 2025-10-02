@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/umardev500/go-laundry/internal/types"
 )
 
 type Repository interface {
@@ -31,7 +32,7 @@ type Repository interface {
 	FindByToken(ctx context.Context, token string) (*User, error)
 
 	// list retrieves users based on the filter criteria
-	List(ctx context.Context, filter UserFilter) ([]*User, error)
+	List(ctx context.Context, filter UserFilter) (*types.PageData[User], error)
 
 	// PurgeUser performs a hard delete, physically removing the user record.
 	//

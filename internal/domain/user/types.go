@@ -40,12 +40,12 @@ const (
 )
 
 type UserFilter struct {
-	TenantID       *uuid.UUID // restrict to a tenant
-	Query          string     // search by email or name
-	Limit          int        // pagination
-	Offset         int
-	OrderBy        UserOrderBy // e.g. "email asc", "created_at desc"
-	IncludeDeleted bool        // if true, include soft-deleted users
+	TenantID       *uuid.UUID  `query:"tenant_id"` // restrict to a tenant
+	Query          string      `query:"query"`     // search by email or name
+	Limit          int         `query:"limit"`     // pagination
+	Offset         int         `query:"offset"`
+	OrderBy        UserOrderBy `query:"order_by"`        // e.g. "email asc", "created_at desc"
+	IncludeDeleted bool        `query:"include_deleted"` // if true, include soft-deleted users
 }
 
 func (f UserFilter) WithDefaults() UserFilter {

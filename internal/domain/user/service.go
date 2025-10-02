@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/umardev500/go-laundry/internal/types"
 )
 
 type Service interface {
@@ -26,7 +27,7 @@ type Service interface {
 
 	// List retrieves users based on the provided filter.
 	// The service can apply tenant-scoping and other business rules before calling the repository.
-	List(ctx context.Context, filter UserFilter) ([]*User, error)
+	List(ctx context.Context, filter UserFilter) (*types.PageResult[User], error)
 
 	// Purge permanently removes a user from the system.
 	// Tenant admin can purge only their own users; platform admin can purge any user.
