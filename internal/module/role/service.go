@@ -55,7 +55,7 @@ func (s *serviceImpl) GetRoleByName(ctx context.Context, name string, tenantID *
 func (s *serviceImpl) ListRoles(ctx context.Context, f *role.Filter, tenantID *uuid.UUID) (*types.PageResult[role.Role], error) {
 	f = f.WithDefaults()
 
-	result, err := s.repo.List(ctx, tenantID)
+	result, err := s.repo.List(ctx, f, tenantID)
 	if err != nil {
 		return nil, err
 	}

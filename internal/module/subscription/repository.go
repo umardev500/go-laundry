@@ -23,7 +23,7 @@ type repositoryImpl struct {
 }
 
 // GetByID implements subscription.Repository.
-func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID, filter *subscription.SubscriptionFilter) (*subscription.Subscription, error) {
+func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID, filter *subscription.Filter) (*subscription.Subscription, error) {
 	conn := r.client.GetConn(ctx)
 
 	q := conn.Subscription.
@@ -109,7 +109,7 @@ func (r *repositoryImpl) Create(ctx context.Context, payload *subscription.Subsc
 }
 
 // List implements subscription.Repository.
-func (r *repositoryImpl) List(ctx context.Context, filter *subscription.SubscriptionFilter) ([]*subscription.Subscription, error) {
+func (r *repositoryImpl) List(ctx context.Context, filter *subscription.Filter) ([]*subscription.Subscription, error) {
 	conn := r.client.GetConn(ctx)
 
 	q := conn.Subscription.
@@ -233,7 +233,7 @@ func (r *repositoryImpl) setActivePlan(ctx context.Context, tenantID uuid.UUID, 
 	return r.redisClient.Set(ctx, cacheKey, planID.String(), expiration).Err()
 }
 
-func (r *repositoryImpl) applyFilter(q **ent.SubscriptionQuery, filter *subscription.SubscriptionFilter) {
+func (r *repositoryImpl) applyFilter(q **ent.SubscriptionQuery, filter *subscription.Filter) {
 	if filter == nil {
 		return
 	}

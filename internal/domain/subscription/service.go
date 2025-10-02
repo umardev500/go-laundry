@@ -8,7 +8,7 @@ import (
 
 type Service interface {
 	// List retrieves all subscriptions
-	List(ctx context.Context, filter *SubscriptionFilter) ([]*Subscription, error)
+	List(ctx context.Context, filter *Filter) ([]*Subscription, error)
 
 	// Create insertrs a new subscription
 	Create(ctx context.Context, userID uuid.UUID, payload *SubscriptionCreate) (*Subscription, error)

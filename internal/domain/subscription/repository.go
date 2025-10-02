@@ -9,11 +9,11 @@ import (
 // Repository defines the interface for interacting with Subscription entities.
 type Repository interface {
 	// GetByID retrieves a subscription by its ID
-	GetByID(ctx context.Context, id uuid.UUID, filter *SubscriptionFilter) (*Subscription, error)
+	GetByID(ctx context.Context, id uuid.UUID, filter *Filter) (*Subscription, error)
 
 	// List retrieves all subscriptions
 	// Return a slice of subscriptions pointers and any error encountered
-	List(ctx context.Context, filter *SubscriptionFilter) ([]*Subscription, error)
+	List(ctx context.Context, filter *Filter) ([]*Subscription, error)
 
 	// Create inserts a new subscription from the given payload.
 	Create(ctx context.Context, payload *SubscriptionCreate) (*Subscription, error)

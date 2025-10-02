@@ -33,13 +33,13 @@ type Subscription struct {
 	UpdatedAt time.Time          `json:"updated_at"`
 }
 
-type SubscriptionFilter struct {
+type Filter struct {
 	IncludePlan    bool `query:"include_plan"`
 	IncludeTenant  bool `query:"include_tenant"`
 	IncludePayment bool `query:"include_payment"`
 }
 
-func (f SubscriptionFilter) WithDefaults() *SubscriptionFilter {
+func (f Filter) WithDefaults() *Filter {
 	return &f
 }
 

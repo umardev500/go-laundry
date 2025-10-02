@@ -9,6 +9,7 @@ import (
 	"github.com/umardev500/go-laundry/ent/tenant"
 	userEntity "github.com/umardev500/go-laundry/ent/user"
 	"github.com/umardev500/go-laundry/internal/db"
+	"github.com/umardev500/go-laundry/internal/domain/permission"
 	"github.com/umardev500/go-laundry/internal/domain/role"
 	"github.com/umardev500/go-laundry/internal/types"
 )
@@ -99,23 +100,47 @@ func (r *repositoryImpl) FindByName(ctx context.Context, name string, tenantID *
 }
 
 // List implements role.Repository.
-func (r *repositoryImpl) List(ctx context.Context, tenantID *uuid.UUID) (*types.PageData[role.Role], error) {
+func (r *repositoryImpl) List(ctx context.Context, f *role.Filter, tenantID *uuid.UUID) (*types.PageData[role.Role], error) {
 	conn := r.client.GetConn(ctx)
 
-	query := conn.Role.Query()
+	q := conn.Role.Query()
 	if tenantID != nil {
-		query = query.Where(roleEntity.HasTenantWith(tenant.IDEQ(*tenantID)))
+		q = q.Where(roleEntity.HasTenantWith(tenant.IDEQ(*tenantID)))
 	} else {
-		query = query.Where(roleEntity.TenantIDIsNil())
+		q = q.Where(roleEntity.TenantIDIsNil())
+	}
+
+	// --- Apply filters ---
+	if !f.IncludeDeleted {
+		q = q.Where(roleEntity.DeletedAtIsNil())
+	}
+
+	if f.IncludePermissions {
+		q = q.WithPermissions()
+	}
+
+	if f.Query != "" {
+		q = q.Where(roleEntity.NameContainsFold(f.Query))
 	}
 
 	// Count total
-	total, err := query.Count(ctx)
+	total, err := q.Count(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	entRoles, err := query.
+	// Ordering
+	switch f.OrderBy {
+	case role.OrderByCreatedAtDesc:
+		q = q.Order(ent.Desc(roleEntity.FieldCreatedAt))
+	default:
+		q = q.Order(ent.Asc(roleEntity.FieldCreatedAt))
+	}
+
+	// Pagination
+	q = q.Limit(f.Limit).Offset(f.Offset)
+
+	entRoles, err := q.
 		All(ctx)
 
 	if err != nil {
@@ -141,9 +166,20 @@ func (r *repositoryImpl) mapFromEnt(e *ent.Role, to *role.Role) {
 		return
 	}
 
+	var mappedPermissions []*permission.Permission
+	if e.Edges.Permissions != nil {
+		for _, p := range e.Edges.Permissions {
+			mappedPermissions = append(mappedPermissions, &permission.Permission{
+				ID:   p.ID,
+				Name: *p.Name,
+			})
+		}
+	}
+
 	to.ID = e.ID
 	to.Name = *e.Name
 	to.Description = e.Description
+	to.Permissions = mappedPermissions
 	to.CreatedAt = e.CreatedAt
 	to.UpdatedAt = e.UpdatedAt
 }

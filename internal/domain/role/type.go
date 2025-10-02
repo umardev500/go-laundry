@@ -4,14 +4,16 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/umardev500/go-laundry/internal/domain/permission"
 )
 
 type Role struct {
-	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	Description *string   `json:"description"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID          uuid.UUID                `json:"id"`
+	Name        string                   `json:"name"`
+	Description *string                  `json:"description"`
+	Permissions []*permission.Permission `json:"permissions"`
+	CreatedAt   time.Time                `json:"created_at"`
+	UpdatedAt   time.Time                `json:"updated_at"`
 }
 
 type RoleCreate struct {
@@ -36,8 +38,8 @@ type Filter struct {
 	Limit              int     `query:"limit"`
 	Offset             int     `query:"offset"`
 	OrderBy            OrderBy `query:"order_by"`
-	IncludeDeleted     bool
-	IncludePermissions bool
+	IncludeDeleted     bool    `query:"include_deleted"`
+	IncludePermissions bool    `query:"include_permissions"`
 }
 
 func (f Filter) WithDefaults() *Filter {

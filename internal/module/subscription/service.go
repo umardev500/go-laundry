@@ -21,7 +21,7 @@ type serviceImpl struct {
 // Activate implements subscription.Service.
 func (s *serviceImpl) Activate(ctx context.Context, id, userID uuid.UUID) (*subscription.Subscription, error) {
 
-	sub, err := s.repo.GetByID(ctx, id, &subscription.SubscriptionFilter{
+	sub, err := s.repo.GetByID(ctx, id, &subscription.Filter{
 		IncludePlan:    true,
 		IncludePayment: true,
 	})
@@ -77,7 +77,7 @@ func (s *serviceImpl) Activate(ctx context.Context, id, userID uuid.UUID) (*subs
 		return nil, err
 	}
 
-	subscriptonUpdated, err = s.repo.GetByID(ctx, id, &subscription.SubscriptionFilter{
+	subscriptonUpdated, err = s.repo.GetByID(ctx, id, &subscription.Filter{
 		IncludePlan:    true,
 		IncludePayment: true,
 		IncludeTenant:  true,
@@ -175,7 +175,7 @@ func (s *serviceImpl) Create(
 }
 
 // List implements subscription.Service.
-func (s *serviceImpl) List(ctx context.Context, filter *subscription.SubscriptionFilter) ([]*subscription.Subscription, error) {
+func (s *serviceImpl) List(ctx context.Context, filter *subscription.Filter) ([]*subscription.Subscription, error) {
 	return s.repo.List(ctx, filter)
 }
 

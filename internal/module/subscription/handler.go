@@ -96,7 +96,7 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 
 func (h *Handler) List(c *fiber.Ctx) error {
 
-	var filter subscription.SubscriptionFilter
+	var filter subscription.Filter
 	if err := c.QueryParser(&filter); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
 			Success: false,
