@@ -20,6 +20,7 @@ type serviceImpl struct {
 
 // Activate implements subscription.Service.
 func (s *serviceImpl) Activate(ctx context.Context, id uuid.UUID) (*subscription.Subscription, error) {
+
 	sub, err := s.repo.GetByID(ctx, id, &subscription.SubscriptionFilter{
 		IncludePlan:    true,
 		IncludePayment: true,

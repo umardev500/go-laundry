@@ -42,6 +42,11 @@ func (c *Client) GetConn(ctx context.Context) *ent.Client {
 
 // WithTransaction runs fn inside a transaction and injects it into ctx
 func (e *Client) WithTransaction(ctx context.Context, fn func(ctx context.Context) error) error {
+	// Skip reassign if ctx alredy has tx
+	if _, ok := ctx.Value(contextKeyTx{}).(*ent.Tx); ok {
+		return fn(ctx)
+	}
+
 	tx, err := e.Client.Tx(ctx)
 	if err != nil {
 		return err

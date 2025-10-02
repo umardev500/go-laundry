@@ -5,6 +5,7 @@ import (
 	"github.com/umardev500/go-laundry/internal/app/middleware"
 	"github.com/umardev500/go-laundry/internal/config"
 	"github.com/umardev500/go-laundry/internal/domain/payment"
+	"github.com/umardev500/go-laundry/internal/module/orchestrator"
 	"github.com/umardev500/go-laundry/internal/module/payment/dto"
 	"github.com/umardev500/go-laundry/internal/utils/fiberutils"
 	"github.com/umardev500/go-laundry/pkg/response"
@@ -12,16 +13,18 @@ import (
 )
 
 type Handler struct {
-	service   payment.Service
-	cfg       *config.Config
-	validator *validator.Validator
+	service             payment.Service
+	cfg                 *config.Config
+	validator           *validator.Validator
+	paymentOrchestrator *orchestrator.PaymentService
 }
 
-func NewHandler(service payment.Service, cfg *config.Config, validator *validator.Validator) *Handler {
+func NewHandler(service payment.Service, cfg *config.Config, validator *validator.Validator, paymentOrchestrator *orchestrator.PaymentService) *Handler {
 	return &Handler{
-		service:   service,
-		cfg:       cfg,
-		validator: validator,
+		service:             service,
+		cfg:                 cfg,
+		validator:           validator,
+		paymentOrchestrator: paymentOrchestrator,
 	}
 }
 
@@ -33,6 +36,28 @@ func (h *Handler) SetupRoutes(router fiber.Router) {
 	r.Get("/:id", h.GetByID)
 
 	r.Patch("/:id/send-payment-proof", h.SendPaymentProof)
+	r.Patch("/:id/process-payment", h.ProcessPayment)
+}
+
+func (h *Handler) ProcessPayment(c *fiber.Ctx) error {
+	id, ok := fiberutils.GetUUIDParamOrAPIError(c, "id")
+	if !ok {
+		return nil
+	}
+
+	result, err := h.paymentOrchestrator.ProcessPayment(c.Context(), id)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
+
+	return c.JSON(response.APIResponse[*payment.Payment]{
+		Data:    result,
+		Success: true,
+		Message: "Payment processed successfully",
+	})
 }
 
 func (h *Handler) SendPaymentProof(c *fiber.Ctx) error {
