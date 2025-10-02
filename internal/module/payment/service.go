@@ -27,8 +27,8 @@ func (s *serviceImpl) List(ctx context.Context, filter *payment.PaymentFilter, t
 }
 
 // Update implements payment.Service.
-func (s *serviceImpl) Update(ctx context.Context, payload *payment.PaymentUpdate, id uuid.UUID, TenantID *uuid.UUID) (*payment.Payment, error) {
-	return s.repo.Update(ctx, payload, id, TenantID)
+func (s *serviceImpl) Update(ctx context.Context, payload *payment.PaymentUpdate, id, userID uuid.UUID, TenantID *uuid.UUID) (*payment.Payment, error) {
+	return s.repo.Update(ctx, payload, id, userID, TenantID)
 }
 
 func NewService(repo payment.Repository) payment.Service {

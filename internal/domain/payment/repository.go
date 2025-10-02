@@ -24,5 +24,5 @@ type Repository interface {
 	// Update updates a payment
 	// If tenantID is provided, only payments for that tenant will be returned
 	// Return a payment pointer and any error encountered
-	Update(ctx context.Context, payload *PaymentUpdate, id uuid.UUID, TenantID *uuid.UUID) (*Payment, error)
+	Update(ctx context.Context, payload *PaymentUpdate, id, userID uuid.UUID, TenantID *uuid.UUID) (*Payment, error)
 }

@@ -2,6 +2,7 @@ package payment
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/internal/app/middleware"
 	"github.com/umardev500/go-laundry/internal/config"
 	"github.com/umardev500/go-laundry/internal/domain/payment"
@@ -45,7 +46,10 @@ func (h *Handler) ProcessPayment(c *fiber.Ctx) error {
 		return nil
 	}
 
-	result, err := h.paymentOrchestrator.ProcessPayment(c.Context(), id)
+	userID := c.Locals("user_id").(uuid.UUID)
+	tenantID := fiberutils.GetTenantIDfromCtx(c)
+
+	result, err := h.paymentOrchestrator.ProcessPayment(c.Context(), userID, id, tenantID)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
 			Success: false,
@@ -85,8 +89,9 @@ func (h *Handler) SendPaymentProof(c *fiber.Ctx) error {
 		ProofURL: &req.ProofURL,
 	}
 
+	userID := c.Locals("user_id").(uuid.UUID)
 	tenantIDPtr := fiberutils.GetTenantIDfromCtx(c)
-	paymentData, err := h.service.Update(c.Context(), payload, id, tenantIDPtr)
+	paymentData, err := h.service.Update(c.Context(), payload, id, userID, tenantIDPtr)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
 			Success: false,

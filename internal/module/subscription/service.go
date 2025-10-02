@@ -19,7 +19,7 @@ type serviceImpl struct {
 }
 
 // Activate implements subscription.Service.
-func (s *serviceImpl) Activate(ctx context.Context, id uuid.UUID) (*subscription.Subscription, error) {
+func (s *serviceImpl) Activate(ctx context.Context, id, userID uuid.UUID) (*subscription.Subscription, error) {
 
 	sub, err := s.repo.GetByID(ctx, id, &subscription.SubscriptionFilter{
 		IncludePlan:    true,
@@ -63,12 +63,12 @@ func (s *serviceImpl) Activate(ctx context.Context, id uuid.UUID) (*subscription
 	err = s.client.WithTransaction(ctx, func(ctx context.Context) error {
 		paymentInfo := sub.Payment
 
-		_, err = s.paymentService.Update(ctx, &paymentPayload, paymentInfo.ID, sub.TenantID)
+		_, err = s.paymentService.Update(ctx, &paymentPayload, paymentInfo.ID, userID, sub.TenantID)
 		if err != nil {
 			return err
 		}
 
-		subscriptonUpdated, err = s.repo.Update(ctx, payload, id)
+		subscriptonUpdated, err = s.repo.Update(ctx, payload, id, userID)
 
 		return err
 	})

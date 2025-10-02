@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/internal/db"
+	"github.com/umardev500/go-laundry/internal/domain/audit"
 	"github.com/umardev500/go-laundry/internal/domain/payment"
 	"github.com/umardev500/go-laundry/internal/domain/subscription"
 )
@@ -13,17 +14,24 @@ type PaymentService struct {
 	subSrv     subscription.Service
 	paymentSrv payment.Service
 	client     *db.Client
+	auditSrv   audit.Service
 }
 
-func NewPaymentService(subSrv subscription.Service, paymentSrv payment.Service, client *db.Client) *PaymentService {
+func NewPaymentService(
+	subSrv subscription.Service,
+	paymentSrv payment.Service,
+	client *db.Client,
+	auditSrv audit.Service,
+) *PaymentService {
 	return &PaymentService{
 		subSrv:     subSrv,
 		paymentSrv: paymentSrv,
 		client:     client,
+		auditSrv:   auditSrv,
 	}
 }
 
-func (p *PaymentService) ProcessPayment(ctx context.Context, id uuid.UUID) (*payment.Payment, error) {
+func (p *PaymentService) ProcessPayment(ctx context.Context, id, userID uuid.UUID, tenantID *uuid.UUID) (*payment.Payment, error) {
 	var updatedPayment *payment.Payment
 
 	err := p.client.WithTransaction(ctx, func(ctx context.Context) error {
@@ -34,7 +42,7 @@ func (p *PaymentService) ProcessPayment(ctx context.Context, id uuid.UUID) (*pay
 				status := payment.Completed
 				return &status
 			}(),
-		}, id, nil)
+		}, id, userID, tenantID)
 		if err != nil {
 			return err
 		}
@@ -44,7 +52,7 @@ func (p *PaymentService) ProcessPayment(ctx context.Context, id uuid.UUID) (*pay
 
 		switch refType {
 		case payment.Subscription:
-			_, err := p.subSrv.Activate(ctx, refID)
+			_, err := p.subSrv.Activate(ctx, refID, userID)
 			if err != nil {
 				return err
 			}

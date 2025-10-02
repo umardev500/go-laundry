@@ -40,6 +40,10 @@ func (Subscription) Fields() []ent.Field {
 			Values("active", "inactive", "pending", "cancelled", "suspended").
 			Default("pending"),
 
+		field.UUID("updated_by", uuid.UUID{}).
+			Optional().
+			Nillable(),
+
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable(),
@@ -71,5 +75,9 @@ func (Subscription) Edges() []ent.Edge {
 			Annotations(
 				entsql.OnDelete(entsql.Cascade),
 			),
+
+		edge.To("audit_logs", AuditLog.Type).Annotations(
+			entsql.OnDelete(entsql.Cascade),
+		),
 	}
 }

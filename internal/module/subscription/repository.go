@@ -41,7 +41,7 @@ func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID, filter *subs
 }
 
 // Update implements subscription.Repository.
-func (r *repositoryImpl) Update(ctx context.Context, payload *subscription.SubscriptionUpdate, id uuid.UUID) (*subscription.Subscription, error) {
+func (r *repositoryImpl) Update(ctx context.Context, payload *subscription.SubscriptionUpdate, id, userID uuid.UUID) (*subscription.Subscription, error) {
 	conn := r.client.GetConn(ctx)
 
 	sub, err := conn.Subscription.
@@ -49,6 +49,7 @@ func (r *repositoryImpl) Update(ctx context.Context, payload *subscription.Subsc
 		SetNillableStartDate(payload.StartDate).
 		SetNillableEndDate(payload.EndDate).
 		SetNillableStatus((*subscriptionEntity.Status)(payload.Status)).
+		SetUpdatedBy(userID).
 		Save(ctx)
 
 	if err != nil {

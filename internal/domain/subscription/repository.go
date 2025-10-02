@@ -19,5 +19,5 @@ type Repository interface {
 	Create(ctx context.Context, payload *SubscriptionCreate) (*Subscription, error)
 
 	// Update updates an existing subscription
-	Update(ctx context.Context, payload *SubscriptionUpdate, id uuid.UUID) (*Subscription, error)
+	Update(ctx context.Context, payload *SubscriptionUpdate, id, userID uuid.UUID) (*Subscription, error)
 }

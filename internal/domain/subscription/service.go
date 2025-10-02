@@ -14,5 +14,5 @@ type Service interface {
 	Create(ctx context.Context, userID uuid.UUID, payload *SubscriptionCreate) (*Subscription, error)
 
 	// Activate sets a subscription as active for the tenant
-	Activate(ctx context.Context, id uuid.UUID) (*Subscription, error)
+	Activate(ctx context.Context, id, userID uuid.UUID) (*Subscription, error)
 }

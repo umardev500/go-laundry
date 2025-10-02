@@ -19,7 +19,7 @@ type repositoryImpl struct {
 }
 
 // Update implements payment.Repository.
-func (r *repositoryImpl) Update(ctx context.Context, payload *payment.PaymentUpdate, id uuid.UUID, TenantID *uuid.UUID) (*payment.Payment, error) {
+func (r *repositoryImpl) Update(ctx context.Context, payload *payment.PaymentUpdate, id, userID uuid.UUID, TenantID *uuid.UUID) (*payment.Payment, error) {
 	conn := r.client.GetConn(ctx)
 
 	builder := conn.Payment.
@@ -27,7 +27,8 @@ func (r *repositoryImpl) Update(ctx context.Context, payload *payment.PaymentUpd
 		SetNillableProofURL(payload.ProofURL).
 		SetNillableAmount(payload.Amount).
 		SetNillableStatus((*paymentEntity.Status)(payload.Status)).
-		SetNillablePaidAt(payload.PaidAt)
+		SetNillablePaidAt(payload.PaidAt).
+		SetAdminID(userID)
 
 	pymnt, err := builder.Save(ctx)
 	if err != nil {

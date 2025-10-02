@@ -7,6 +7,7 @@ import (
 	"github.com/google/wire"
 	"github.com/umardev500/go-laundry/internal/config"
 	"github.com/umardev500/go-laundry/internal/db"
+	"github.com/umardev500/go-laundry/internal/module/audit"
 	"github.com/umardev500/go-laundry/internal/module/auth"
 	"github.com/umardev500/go-laundry/internal/module/feature"
 	"github.com/umardev500/go-laundry/internal/module/orchestrator"
@@ -49,6 +50,7 @@ var AppSet = wire.NewSet(
 	region.ProviderSet,
 	upload.ProvidertSet,
 	orchestrator.ProviderSet,
+	audit.ProviderSet,
 )
 
 func InitApp(cfg *config.Config) (*App, error) {

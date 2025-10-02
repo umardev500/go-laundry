@@ -17,5 +17,5 @@ type Service interface {
 	List(ctx context.Context, filter *PaymentFilter, tenantID *uuid.UUID) ([]*Payment, error)
 
 	// Update updates a payment
-	Update(ctx context.Context, payload *PaymentUpdate, id uuid.UUID, TenantID *uuid.UUID) (*Payment, error)
+	Update(ctx context.Context, payload *PaymentUpdate, userID, id uuid.UUID, TenantID *uuid.UUID) (*Payment, error)
 }

@@ -84,5 +84,13 @@ func (User) Edges() []ent.Edge {
 		edge.To("addresses", Addresses.Type).Annotations(
 			entsql.OnDelete(entsql.Cascade),
 		),
+
+		edge.To("audit_logs", AuditLog.Type).Annotations(
+			entsql.OnDelete(entsql.Cascade),
+		),
+
+		edge.To("performed_audit_logs", AuditLog.Type).Annotations(
+			entsql.OnDelete(entsql.Cascade),
+		),
 	}
 }

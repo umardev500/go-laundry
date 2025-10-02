@@ -91,5 +91,9 @@ func (Tenant) Edges() []ent.Edge {
 		edge.To("categories", Category.Type).Annotations(
 			entsql.OnDelete(entsql.Cascade),
 		),
+
+		edge.To("audit_logs", AuditLog.Type).Annotations(
+			entsql.OnDelete(entsql.Cascade),
+		),
 	}
 }

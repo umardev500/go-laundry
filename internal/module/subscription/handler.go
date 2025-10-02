@@ -43,7 +43,9 @@ func (h *Handler) Activate(c *fiber.Ctx) error {
 		return nil
 	}
 
-	sub, err := h.service.Activate(c.Context(), id)
+	userID := c.Locals("user_id").(uuid.UUID)
+
+	sub, err := h.service.Activate(c.Context(), id, userID)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
 			Success: false,
