@@ -5,19 +5,23 @@ import (
 	"github.com/umardev500/go-laundry/internal/app/middleware"
 	"github.com/umardev500/go-laundry/internal/config"
 	"github.com/umardev500/go-laundry/internal/domain/payment"
+	"github.com/umardev500/go-laundry/internal/module/payment/dto"
 	"github.com/umardev500/go-laundry/internal/utils/fiberutils"
 	"github.com/umardev500/go-laundry/pkg/response"
+	"github.com/umardev500/go-laundry/pkg/validator"
 )
 
 type Handler struct {
-	service payment.Service
-	cfg     *config.Config
+	service   payment.Service
+	cfg       *config.Config
+	validator *validator.Validator
 }
 
-func NewHandler(service payment.Service, cfg *config.Config) *Handler {
+func NewHandler(service payment.Service, cfg *config.Config, validator *validator.Validator) *Handler {
 	return &Handler{
-		service: service,
-		cfg:     cfg,
+		service:   service,
+		cfg:       cfg,
+		validator: validator,
 	}
 }
 
@@ -27,17 +31,49 @@ func (h *Handler) SetupRoutes(router fiber.Router) {
 	r.Use(middleware.CheckAuth(h.cfg))
 	r.Get("/", h.List)
 	r.Get("/:id", h.GetByID)
-	r.Post("/", h.Create)
-	r.Put("/:id", h.Update)
-	r.Delete("/:id", h.Delete)
+
+	r.Patch("/:id/send-payment-proof", h.SendPaymentProof)
 }
 
-func (h *Handler) Create(c *fiber.Ctx) error {
-	return nil
-}
+func (h *Handler) SendPaymentProof(c *fiber.Ctx) error {
+	id, ok := fiberutils.GetUUIDParamOrAPIError(c, "id")
+	if !ok {
+		return nil
+	}
 
-func (h *Handler) Delete(c *fiber.Ctx) error {
-	return nil
+	var req dto.SendPaymentProof
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
+
+	if err := h.validator.Struct(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
+
+	payload := &payment.PaymentUpdate{
+		ProofURL: &req.ProofURL,
+	}
+
+	tenantIDPtr := fiberutils.GetTenantIDfromCtx(c)
+	paymentData, err := h.service.Update(c.Context(), payload, id, tenantIDPtr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
+
+	return c.JSON(response.APIResponse[*payment.Payment]{
+		Success: true,
+		Message: "Payment proof sent successfully",
+		Data:    paymentData,
+	})
 }
 
 func (h *Handler) GetByID(c *fiber.Ctx) error {
@@ -46,17 +82,17 @@ func (h *Handler) GetByID(c *fiber.Ctx) error {
 
 func (h *Handler) List(c *fiber.Ctx) error {
 	// Parse query params
-	status := c.Query("status")
-	typ := c.Query("type")
-
-	filter := payment.PaymentFilter{
-		Status: (*payment.Status)(&status),
-		Type:   (*payment.ReferenceType)(&typ),
-	}.WithDefaults()
+	var filter payment.PaymentFilter
+	if err := c.QueryParser(&filter); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+	}
 
 	tenantIDPtr := fiberutils.GetTenantIDfromCtx(c)
 
-	payments, err := h.service.List(c.Context(), &filter, tenantIDPtr)
+	payments, err := h.service.List(c.Context(), filter.WithDefaults(), tenantIDPtr)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
 			Success: false,

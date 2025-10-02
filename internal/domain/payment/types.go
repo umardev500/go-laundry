@@ -41,6 +41,8 @@ type Payment struct {
 	Currency      Currency                     `json:"currency"`
 	Status        Status                       `json:"status"`
 	Method        *paymentmethod.PaymentMethod `json:"method"`
+	ProofURL      *string                      `json:"proof_url"`
+	AdminID       *uuid.UUID                   `json:"admin_id"`
 	PaidAt        *time.Time                   `json:"paid_at"`
 	CreatedAt     time.Time                    `json:"created_at"`
 	UpdatedAt     time.Time                    `json:"updated_at"`
@@ -59,29 +61,22 @@ type PaymentCreate struct {
 }
 
 type PaymentUpdate struct {
-	Amount *float64
-	Status *Status
-	PaidAt *time.Time
+	ProofURL *string
+	AdminID  *uuid.UUID
+	Amount   *float64
+	Status   *Status
+	PaidAt   *time.Time
 }
 
 type PaymentFilter struct {
-	Status *Status
-	Type   *ReferenceType
+	Status            *Status        `query:"status"`
+	Type              *ReferenceType `query:"type"`
+	HasProof          bool           `query:"has_proof"`
+	IncludeMethod     bool           `query:"include_method"`
+	IncludeMethodType bool           `query:"include_method_type"`
+	IncludeTenant     bool           `query:"include_tenant"`
 }
 
-func (p PaymentFilter) WithDefaults() PaymentFilter {
-	return PaymentFilter{
-		Status: func() *Status {
-			if *p.Status == "" {
-				return nil
-			}
-			return p.Status
-		}(),
-		Type: func() *ReferenceType {
-			if *p.Type == "" {
-				return nil
-			}
-			return p.Type
-		}(),
-	}
+func (p PaymentFilter) WithDefaults() *PaymentFilter {
+	return &p
 }
