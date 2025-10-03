@@ -24,6 +24,7 @@ import (
 	"github.com/umardev500/go-laundry/internal/module/services"
 	"github.com/umardev500/go-laundry/internal/module/subscription"
 	"github.com/umardev500/go-laundry/internal/module/tenant"
+	tenantuser "github.com/umardev500/go-laundry/internal/module/tenant_user"
 	"github.com/umardev500/go-laundry/internal/module/upload"
 	"github.com/umardev500/go-laundry/internal/module/user"
 	"github.com/umardev500/go-laundry/internal/seed"
@@ -57,6 +58,7 @@ var AppSet = wire.NewSet(
 	category.ProviderSet,
 	services.ProviderSet,
 	platformuser.ProviderSet,
+	tenantuser.ProviderSet,
 )
 
 func InitApp(cfg *config.Config) (*App, error) {

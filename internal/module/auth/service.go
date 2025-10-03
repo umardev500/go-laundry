@@ -12,6 +12,7 @@ import (
 	"github.com/umardev500/go-laundry/internal/config"
 	"github.com/umardev500/go-laundry/internal/domain/auth"
 	platformuser "github.com/umardev500/go-laundry/internal/domain/platform_user"
+	tenantuser "github.com/umardev500/go-laundry/internal/domain/tenant_user"
 	"github.com/umardev500/go-laundry/internal/domain/user"
 	"github.com/umardev500/go-laundry/internal/types"
 	"github.com/umardev500/go-laundry/internal/utils"
@@ -31,6 +32,7 @@ type serviceImpl struct {
 	emailClient     *email.EmailClient
 	repo            auth.Repository
 	platformUserSrv platformuser.Service
+	tenantUserSrv   tenantuser.Service
 }
 
 func NewServiceImpl(
@@ -39,13 +41,15 @@ func NewServiceImpl(
 	emailClient *email.EmailClient,
 	repo auth.Repository,
 	platformUserSrv platformuser.Service,
+	tenantUserSrv tenantuser.Service,
 ) *serviceImpl {
 	return &serviceImpl{
-		userService:     userService,
 		cfg:             cfg,
-		emailClient:     emailClient,
 		repo:            repo,
+		userService:     userService,
+		emailClient:     emailClient,
 		platformUserSrv: platformUserSrv,
+		tenantUserSrv:   tenantUserSrv,
 	}
 }
 
@@ -61,6 +65,15 @@ func (s *serviceImpl) Login(ctx context.Context, email, password string) (user *
 	}
 
 	fmt.Println(platformUser)
+
+	tenantUser, err := s.tenantUserSrv.GetByUserID(ctx, user.ID)
+	if err != nil {
+		fmt.Println(err)
+
+		return
+	}
+
+	fmt.Println("Tenant user", tenantUser)
 
 	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		return
