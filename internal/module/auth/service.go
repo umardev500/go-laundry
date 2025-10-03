@@ -9,6 +9,7 @@ import (
 	"github.com/lestrrat-go/jwx/v3/jwa"
 	"github.com/lestrrat-go/jwx/v3/jwt"
 	"github.com/redis/go-redis/v9"
+	"github.com/umardev500/go-laundry/ent"
 	"github.com/umardev500/go-laundry/internal/config"
 	"github.com/umardev500/go-laundry/internal/domain/auth"
 	platformuser "github.com/umardev500/go-laundry/internal/domain/platform_user"
@@ -21,8 +22,8 @@ import (
 )
 
 type Service interface {
-	Login(ctx context.Context, email, password string) (user *user.User, token, refreshToken string, err error)
-	ResetPassword(ctx context.Context, token, newPassword string, scope *types.Scoped) (user *user.User, accessToken, refreshToken string, err error)
+	Login(ctx context.Context, email, password string) (user *user.User, token, refreshToken string, reso *auth.LoginResolution, err error)
+	ResetPassword(ctx context.Context, token, newPassword string, scope *types.Scoped) (user *user.User, accessToken, refreshToken string, reso *auth.LoginResolution, err error)
 	RequestPasswordReset(ctx context.Context, email string, scope *types.Scoped) error
 }
 
@@ -53,27 +54,43 @@ func NewServiceImpl(
 	}
 }
 
-func (s *serviceImpl) Login(ctx context.Context, email, password string) (user *user.User, token, refreshToken string, err error) {
+func (s *serviceImpl) Login(ctx context.Context, email, password string) (
+	user *user.User, token, refreshToken string, reso *auth.LoginResolution, err error,
+) {
 	user, err = s.userService.FindByEmail(ctx, email)
 	if err != nil {
 		return
 	}
 
+	var scope types.Scope
+
 	platformUser, err := s.platformUserSrv.GetByUserID(ctx, user.ID)
-	if err != nil {
+	if err != nil && !ent.IsNotFound(err) {
 		return
 	}
 
-	fmt.Println(platformUser)
-
-	tenantUser, err := s.tenantUserSrv.GetByUserID(ctx, user.ID)
-	if err != nil {
-		fmt.Println(err)
-
+	tenantUsers, err := s.tenantUserSrv.GetByUserID(ctx, user.ID, nil)
+	if err != nil && !ent.IsNotFound(err) {
 		return
 	}
 
-	fmt.Println("Tenant user", tenantUser)
+	res := &auth.LoginResolution{
+		PlatformUser: platformUser,
+		TenantUsers:  tenantUsers.Data,
+	}
+
+	switch {
+	case res.IsAmbiguous():
+		return nil, "", "", res, auth.ErrMultipleAccountTypes
+	case res.IsPlatformOnly():
+		scope = types.ScopePlatform
+	case res.IsSingleTenant():
+		scope = types.ScopeTenant
+	case res.IsTenantMulti():
+		return nil, "", "", res, auth.ErrMultipleTenants
+	default:
+		scope = types.ScopeGlobal
+	}
 
 	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		return
@@ -89,7 +106,7 @@ func (s *serviceImpl) Login(ctx context.Context, email, password string) (user *
 		return
 	}
 
-	token, err = s.generateJWT(user, planID)
+	token, err = s.generateJWT(user, planID, scope)
 	if err != nil {
 		return
 	}
@@ -102,7 +119,9 @@ func (s *serviceImpl) Login(ctx context.Context, email, password string) (user *
 	return
 }
 
-func (s *serviceImpl) ResetPassword(ctx context.Context, token, newPassword string, scope *types.Scoped) (u *user.User, accessToken, refreshToken string, err error) {
+func (s *serviceImpl) ResetPassword(ctx context.Context, token, newPassword string, scope *types.Scoped) (
+	u *user.User, accessToken, refreshToken string, reso *auth.LoginResolution, err error,
+) {
 	// Validate token, get user
 	userData, err := s.validateResetToken(ctx, token)
 	if err != nil {
@@ -173,7 +192,7 @@ func (s *serviceImpl) RequestPasswordReset(ctx context.Context, email string, sc
 	return nil
 }
 
-func (s *serviceImpl) generateJWT(u *user.User, planID uuid.UUID) (tokenStr string, err error) {
+func (s *serviceImpl) generateJWT(u *user.User, planID uuid.UUID, scope types.Scope) (tokenStr string, err error) {
 	builder := jwt.NewBuilder().
 		Issuer(s.cfg.JWT.Issuer).
 		Subject(u.ID.String()).

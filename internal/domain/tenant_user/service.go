@@ -10,8 +10,8 @@ import (
 type Service interface {
 	Create(ctx context.Context, payload *Create) (*TenantUser, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*TenantUser, error)
-	GetByUserID(ctx context.Context, userID uuid.UUID) (*TenantUser, error)
-	List(ctx context.Context, filter Filter) (*types.PageResult[TenantUser], error)
+	GetByUserID(ctx context.Context, userID uuid.UUID, f *Filter) (*types.PageResult[TenantUser], error)
+	List(ctx context.Context, filter *Filter) (*types.PageResult[TenantUser], error)
 	Update(ctx context.Context, id uuid.UUID, payload *Update) (*TenantUser, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }

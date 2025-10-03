@@ -8,6 +8,7 @@ import (
 	"github.com/umardev500/go-laundry/ent"
 	tenantuserEnt "github.com/umardev500/go-laundry/ent/tenantuser"
 	"github.com/umardev500/go-laundry/internal/db"
+	"github.com/umardev500/go-laundry/internal/domain/tenant"
 	domain "github.com/umardev500/go-laundry/internal/domain/tenant_user"
 	"github.com/umardev500/go-laundry/internal/types"
 )
@@ -43,6 +44,7 @@ func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID) (*domain.Ten
 
 	entTU, err := conn.TenantUser.Query().
 		Where(tenantuserEnt.IDEQ(id)).
+		WithTenant().
 		Only(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("tenant user not found: %w", err)
@@ -51,25 +53,50 @@ func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID) (*domain.Ten
 	return mapFromEnt(entTU), nil
 }
 
-func (r *repositoryImpl) GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.TenantUser, error) {
+func (r *repositoryImpl) GetByUserID(ctx context.Context, userID uuid.UUID, filter *domain.Filter) (*types.PageData[domain.TenantUser], error) {
 	conn := r.client.GetConn(ctx)
 
-	entTU, err := conn.TenantUser.Query().
-		Where(
-			tenantuserEnt.UserIDEQ(userID),
-		).
-		Only(ctx)
+	q := conn.TenantUser.Query().
+		Where(tenantuserEnt.UserIDEQ(userID)).
+		WithTenant()
+
+	// apply ordering
+	q = applyFilter(q, filter)
+
+	// count total
+	total, err := q.Count(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("tenant user not found: %w", err)
+		return nil, fmt.Errorf("failed to count tenant users by userID: %w", err)
 	}
 
-	return mapFromEnt(entTU), nil
+	// paging
+	q = q.Limit(filter.Limit).Offset(filter.Offset)
+
+	// fetch
+	entList, err := q.All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant users by userID: %w", err)
+	}
+
+	// map ent -> domain
+	result := make([]*domain.TenantUser, len(entList))
+	for i, e := range entList {
+		result[i] = mapFromEnt(e)
+	}
+
+	return &types.PageData[domain.TenantUser]{
+		Data:  result,
+		Total: total,
+	}, nil
 }
 
-func (r *repositoryImpl) List(ctx context.Context, filter domain.Filter) (*types.PageData[domain.TenantUser], error) {
+func (r *repositoryImpl) List(ctx context.Context, filter *domain.Filter) (*types.PageData[domain.TenantUser], error) {
 	conn := r.client.GetConn(ctx)
 
-	q := conn.TenantUser.Query()
+	q := conn.TenantUser.
+		Query().
+		WithTenant()
+
 	q = applyFilter(q, filter)
 
 	total, err := q.Count(ctx)
@@ -111,7 +138,7 @@ func (r *repositoryImpl) Delete(ctx context.Context, id uuid.UUID) error {
 	return conn.TenantUser.DeleteOneID(id).Exec(ctx)
 }
 
-func applyFilter(q *ent.TenantUserQuery, filter domain.Filter) *ent.TenantUserQuery {
+func applyFilter(q *ent.TenantUserQuery, filter *domain.Filter) *ent.TenantUserQuery {
 	switch filter.OrderBy {
 	case domain.OrderByCreatedAtDesc:
 		q = q.Order(ent.Desc(tenantuserEnt.FieldCreatedAt))
@@ -126,9 +153,24 @@ func applyFilter(q *ent.TenantUserQuery, filter domain.Filter) *ent.TenantUserQu
 }
 
 func mapFromEnt(e *ent.TenantUser) *domain.TenantUser {
+	var mappedTenant *tenant.Tenant
+	tenantEnt := e.Edges.Tenant
+	if tenantEnt != nil {
+		mappedTenant = &tenant.Tenant{
+			ID:        tenantEnt.ID,
+			Name:      *tenantEnt.Name,
+			Phone:     *tenantEnt.Phone,
+			Email:     *tenantEnt.Email,
+			Address:   *tenantEnt.Address,
+			CreatedAt: tenantEnt.CreatedAt,
+			UpdatedAt: tenantEnt.UpdatedAt,
+		}
+	}
+
 	return &domain.TenantUser{
 		ID:        e.ID,
 		TenantID:  *e.TenantID,
+		Tenant:    mappedTenant,
 		UserID:    *e.UserID,
 		Status:    domain.Status(*e.Status),
 		CreatedAt: e.CreatedAt,

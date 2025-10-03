@@ -2,6 +2,7 @@ package auth
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/umardev500/go-laundry/internal/domain/auth"
 	"github.com/umardev500/go-laundry/internal/module/auth/dto"
 	"github.com/umardev500/go-laundry/internal/utils/fiberutils"
 	"github.com/umardev500/go-laundry/pkg/response"
@@ -29,6 +30,8 @@ func (h *Handler) SetupRoutes(router fiber.Router) {
 }
 
 func (h *Handler) Login(c *fiber.Ctx) error {
+	ctx := c.UserContext()
+
 	var req dto.LoginRequest
 	if err := c.BodyParser(&req); err != nil {
 		return err
@@ -40,10 +43,33 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		})
 	}
 
-	_, token, refreshToken, err := h.service.Login(c.Context(), req.Email, req.Password)
+	_, token, refreshToken, reso, err := h.service.Login(ctx, req.Email, req.Password)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
+		if err == auth.ErrMultipleAccountTypes {
+			return c.Status(fiber.StatusConflict).JSON(response.APIResponse[any]{
+				Success: false,
+				Error:   err.Error(),
+				Data: dto.LoginResolution{
+					PlatformUser: reso.PlatformUser,
+					TenantUsers:  reso.TenantUsers,
+				},
+			})
+		}
+
+		if err == auth.ErrMultipleTenants {
+			return c.Status(fiber.StatusConflict).JSON(response.APIResponse[any]{
+				Success: false,
+				Error:   err.Error(),
+				Data: dto.LoginResolution{
+					PlatformUser: reso.PlatformUser,
+					TenantUsers:  reso.TenantUsers,
+				},
+			})
+		}
+
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
 		})
 	}
 
@@ -79,8 +105,30 @@ func (h *Handler) ResetPassword(c *fiber.Ctx) error {
 		return nil
 	}
 
-	_, token, refreshToken, err := h.service.ResetPassword(c.Context(), req.Token, req.Password, scope)
+	_, token, refreshToken, reso, err := h.service.ResetPassword(c.Context(), req.Token, req.Password, scope)
 	if err != nil {
+		if err == auth.ErrMultipleAccountTypes {
+			return c.Status(fiber.StatusConflict).JSON(response.APIResponse[any]{
+				Success: false,
+				Error:   err.Error(),
+				Data: dto.LoginResolution{
+					PlatformUser: reso.PlatformUser,
+					TenantUsers:  reso.TenantUsers,
+				},
+			})
+		}
+
+		if err == auth.ErrMultipleTenants {
+			return c.Status(fiber.StatusConflict).JSON(response.APIResponse[any]{
+				Success: false,
+				Error:   err.Error(),
+				Data: dto.LoginResolution{
+					PlatformUser: reso.PlatformUser,
+					TenantUsers:  reso.TenantUsers,
+				},
+			})
+		}
+
 		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
 			Success: false,
 			Error:   err.Error(),

@@ -27,11 +27,16 @@ func (s *serviceImpl) GetByID(ctx context.Context, id uuid.UUID) (*domain.Tenant
 	return s.repo.GetByID(ctx, id)
 }
 
-func (s *serviceImpl) GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.TenantUser, error) {
-	return s.repo.GetByUserID(ctx, userID)
+func (s *serviceImpl) GetByUserID(ctx context.Context, userID uuid.UUID, f *domain.Filter) (*types.PageResult[domain.TenantUser], error) {
+	f = f.WithDefaults()
+	result, err := s.repo.GetByUserID(ctx, userID, f)
+	if err != nil {
+		return nil, err
+	}
+	return utils.Paginate(result.Data, result.Total, f.Offset, f.Limit), nil
 }
 
-func (s *serviceImpl) List(ctx context.Context, f domain.Filter) (*types.PageResult[domain.TenantUser], error) {
+func (s *serviceImpl) List(ctx context.Context, f *domain.Filter) (*types.PageResult[domain.TenantUser], error) {
 	f = f.WithDefaults()
 	result, err := s.repo.List(ctx, f)
 	if err != nil {

@@ -15,7 +15,11 @@ type Filter struct {
 	OrderBy OrderBy
 }
 
-func (f Filter) WithDefaults() Filter {
+func (f *Filter) WithDefaults() *Filter {
+	if f == nil {
+		return &Filter{}
+	}
+
 	if f.Limit <= 0 {
 		f.Limit = 10
 	}
