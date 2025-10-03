@@ -11,6 +11,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/umardev500/go-laundry/internal/config"
 	"github.com/umardev500/go-laundry/internal/domain/auth"
+	platformuser "github.com/umardev500/go-laundry/internal/domain/platform_user"
 	"github.com/umardev500/go-laundry/internal/domain/user"
 	"github.com/umardev500/go-laundry/internal/types"
 	"github.com/umardev500/go-laundry/internal/utils"
@@ -25,18 +26,26 @@ type Service interface {
 }
 
 type serviceImpl struct {
-	userService user.Service
-	cfg         *config.Config
-	emailClient *email.EmailClient
-	repo        auth.Repository
+	userService     user.Service
+	cfg             *config.Config
+	emailClient     *email.EmailClient
+	repo            auth.Repository
+	platformUserSrv platformuser.Service
 }
 
-func NewServiceImpl(userService user.Service, cfg *config.Config, emailClient *email.EmailClient, repo auth.Repository) *serviceImpl {
+func NewServiceImpl(
+	userService user.Service,
+	cfg *config.Config,
+	emailClient *email.EmailClient,
+	repo auth.Repository,
+	platformUserSrv platformuser.Service,
+) *serviceImpl {
 	return &serviceImpl{
-		userService: userService,
-		cfg:         cfg,
-		emailClient: emailClient,
-		repo:        repo,
+		userService:     userService,
+		cfg:             cfg,
+		emailClient:     emailClient,
+		repo:            repo,
+		platformUserSrv: platformUserSrv,
 	}
 }
 
@@ -45,6 +54,13 @@ func (s *serviceImpl) Login(ctx context.Context, email, password string) (user *
 	if err != nil {
 		return
 	}
+
+	platformUser, err := s.platformUserSrv.GetByUserID(ctx, user.ID)
+	if err != nil {
+		return
+	}
+
+	fmt.Println(platformUser)
 
 	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		return
