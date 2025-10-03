@@ -7,6 +7,7 @@ import (
 	"github.com/umardev500/go-laundry/ent"
 	roleEntity "github.com/umardev500/go-laundry/ent/role"
 	"github.com/umardev500/go-laundry/ent/tenant"
+	"github.com/umardev500/go-laundry/ent/tenantuser"
 	userEntity "github.com/umardev500/go-laundry/ent/user"
 	"github.com/umardev500/go-laundry/internal/db"
 	"github.com/umardev500/go-laundry/internal/domain/permission"
@@ -33,7 +34,7 @@ func (r *repositoryImpl) AssignRoleToUser(ctx context.Context, tenantID *uuid.UU
 	// If tenantID is not nil, enforce tenant scoping
 	if tenantID != nil {
 		userQuery = userQuery.
-			Where(userEntity.TenantIDEQ(*tenantID))
+			Where(userEntity.HasTenantUsersWith(tenantuser.TenantIDEQ(*tenantID)))
 
 		roleQuery = roleQuery.
 			Where(roleEntity.TenantIDEQ(*tenantID))

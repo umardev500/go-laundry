@@ -12,6 +12,7 @@ import (
 	"github.com/umardev500/go-laundry/internal/config"
 	"github.com/umardev500/go-laundry/internal/domain/auth"
 	"github.com/umardev500/go-laundry/internal/domain/user"
+	"github.com/umardev500/go-laundry/internal/types"
 	"github.com/umardev500/go-laundry/internal/utils"
 	"github.com/umardev500/go-laundry/pkg/email"
 	"golang.org/x/crypto/bcrypt"
@@ -19,8 +20,8 @@ import (
 
 type Service interface {
 	Login(ctx context.Context, email, password string) (user *user.User, token, refreshToken string, err error)
-	ResetPassword(ctx context.Context, token, newPassword string) (user *user.User, accessToken, refreshToken string, err error)
-	RequestPasswordReset(ctx context.Context, email string) error
+	ResetPassword(ctx context.Context, token, newPassword string, scope *types.Scoped) (user *user.User, accessToken, refreshToken string, err error)
+	RequestPasswordReset(ctx context.Context, email string, scope *types.Scoped) error
 }
 
 type serviceImpl struct {
@@ -72,7 +73,7 @@ func (s *serviceImpl) Login(ctx context.Context, email, password string) (user *
 	return
 }
 
-func (s *serviceImpl) ResetPassword(ctx context.Context, token, newPassword string) (u *user.User, accessToken, refreshToken string, err error) {
+func (s *serviceImpl) ResetPassword(ctx context.Context, token, newPassword string, scope *types.Scoped) (u *user.User, accessToken, refreshToken string, err error) {
 	// Validate token, get user
 	userData, err := s.validateResetToken(ctx, token)
 	if err != nil {
@@ -85,7 +86,7 @@ func (s *serviceImpl) ResetPassword(ctx context.Context, token, newPassword stri
 	}
 
 	// Call user service to update credentials
-	updateduser, err := s.userService.Update(ctx, userData.ID, payload, userData.TenantID)
+	updateduser, err := s.userService.Update(ctx, userData.ID, payload, scope)
 	if err != nil {
 		return
 	}
@@ -95,7 +96,7 @@ func (s *serviceImpl) ResetPassword(ctx context.Context, token, newPassword stri
 		ResetToken:     func() *string { s := ""; return &s }(),
 		ResetExpiresAt: nil,
 	}
-	_, err = s.userService.Update(ctx, userData.ID, payload, userData.TenantID)
+	_, err = s.userService.Update(ctx, userData.ID, payload, scope)
 	if err != nil {
 		return
 	}
@@ -108,7 +109,7 @@ func (s *serviceImpl) ResetPassword(ctx context.Context, token, newPassword stri
 	return s.Login(ctx, updateduser.Email, newPassword)
 }
 
-func (s *serviceImpl) RequestPasswordReset(ctx context.Context, email string) error {
+func (s *serviceImpl) RequestPasswordReset(ctx context.Context, email string, scope *types.Scoped) error {
 	// Find user by email
 	u, err := s.userService.FindByEmail(ctx, email)
 	if err != nil {
@@ -125,7 +126,7 @@ func (s *serviceImpl) RequestPasswordReset(ctx context.Context, email string) er
 	}
 
 	// Call user service to update credentials
-	if _, err := s.userService.Update(ctx, u.ID, payload, u.TenantID); err != nil {
+	if _, err := s.userService.Update(ctx, u.ID, payload, scope); err != nil {
 		return err
 	}
 

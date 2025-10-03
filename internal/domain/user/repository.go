@@ -15,13 +15,13 @@ type Repository interface {
 	Create(ctx context.Context, user *UserCreate) (*User, error)
 
 	// CreateProfile creates a profile associated with the given user.
-	CreateProfile(ctx context.Context, userID uuid.UUID, profile *ProfileCreate) (*Profile, error)
+	CreateProfile(ctx context.Context, id uuid.UUID, profile *ProfileCreate) (*Profile, error)
 
 	// Delete performs a soft delete by setting deleted_at on the user.
 	// If tenantID is not nil, the deletion is scoped to that tenant (tenant users can
 	// only delete users within their own tenant).
 	// If tenantID is nil (platform user), deleletion is unrestricted.
-	Delete(ctx context.Context, tenantID *uuid.UUID, userID uuid.UUID) error
+	Delete(ctx context.Context, id uuid.UUID, scope *types.Scoped) error
 
 	// FindByEmail retrieve a non-deleted user by email
 	// Soft-deleted users are excluded
@@ -32,7 +32,7 @@ type Repository interface {
 	FindByToken(ctx context.Context, token string) (*User, error)
 
 	// list retrieves users based on the filter criteria
-	List(ctx context.Context, filter UserFilter) (*types.PageData[User], error)
+	List(ctx context.Context, filter *Filter) (*types.PageData[User], error)
 
 	// PurgeUser performs a hard delete, physically removing the user record.
 	//
@@ -41,7 +41,7 @@ type Repository interface {
 	//
 	// If tenantID is nil (platform user), the purge is unrestricted.
 	// and can be applied across all tenants.
-	PurgeUser(ctx context.Context, tenantID *uuid.UUID, userID uuid.UUID) error
+	PurgeUser(ctx context.Context, id uuid.UUID, scope *types.Scoped) error
 
 	// Update modifies a user's credentials (email and/or password).
 	//
@@ -55,7 +55,7 @@ type Repository interface {
 	// - Only non-nil fields in payload are updated (partial update).
 	// - If the user is soft-deleted, the update will fail and return an error.
 	// - Returns the updated user on success
-	Update(ctx context.Context, payload *UserUpdate, userID uuid.UUID, tenantID *uuid.UUID) (*User, error)
+	Update(ctx context.Context, payload *UserUpdate, userID uuid.UUID, scope *types.Scoped) (*User, error)
 
 	// UpdateProfile updated an existing profile for the give user.
 	UpdateProfile(ctx context.Context, userID uuid.UUID, u *ProfileUpdate) (*Profile, error)

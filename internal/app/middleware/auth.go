@@ -7,6 +7,7 @@ import (
 	"github.com/lestrrat-go/jwx/v3/jwt"
 	"github.com/rs/zerolog/log"
 	"github.com/umardev500/go-laundry/internal/config"
+	"github.com/umardev500/go-laundry/internal/types"
 	"github.com/umardev500/go-laundry/pkg/httputil"
 )
 
@@ -86,7 +87,11 @@ func CheckAuth(cfg *config.Config) fiber.Handler {
 			c.Locals("plan_id", planID)
 		}
 
+		// Set the user id
 		c.Locals("user_id", userID)
+
+		// Set user scope
+		c.Locals("user_scope", types.ScopePlatform)
 
 		return c.Next()
 	}

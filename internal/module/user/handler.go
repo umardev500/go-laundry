@@ -75,17 +75,21 @@ func (h *Handler) createUser(c *fiber.Ctx) error {
 }
 
 func (h *Handler) softDelete(c *fiber.Ctx) error {
-	userID, ok := fiberutils.GetUUIDParamOrAPIError(c, "id")
+	id, ok := fiberutils.GetUUIDParamOrAPIError(c, "id")
 	if !ok {
 		return nil // helper already wrote the response
 	}
 
-	tenantIDPtr := fiberutils.GetTenantIDfromCtx(c)
+	scope := fiberutils.GetScopedFromCtx(c)
+	if scope == nil {
+		return nil
+	}
 
-	err := h.service.Delete(c.Context(), tenantIDPtr, userID)
+	err := h.service.Delete(c.Context(), id, scope)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
+		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
 		})
 	}
 
@@ -99,7 +103,7 @@ func (h *Handler) list(c *fiber.Ctx) error {
 	tenantIDPtr := fiberutils.GetTenantIDfromCtx(c)
 
 	// Parse query params
-	var filter user.UserFilter
+	var filter user.Filter
 	if err := c.QueryParser(&filter); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
 			Success: false,
@@ -108,7 +112,7 @@ func (h *Handler) list(c *fiber.Ctx) error {
 	}
 
 	filter.TenantID = tenantIDPtr
-	result, err := h.service.List(c.Context(), filter)
+	result, err := h.service.List(c.Context(), &filter)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(&response.APIResponse[any]{
 			Success: false,
@@ -125,14 +129,17 @@ func (h *Handler) list(c *fiber.Ctx) error {
 }
 
 func (h *Handler) purge(c *fiber.Ctx) error {
-	userID, ok := fiberutils.GetUUIDParamOrAPIError(c, "id")
+	id, ok := fiberutils.GetUUIDParamOrAPIError(c, "id")
 	if !ok {
 		return nil // helper already wrote the response
 	}
 
-	tenantIDPtr := fiberutils.GetTenantIDfromCtx(c)
+	scope := fiberutils.GetScopedFromCtx(c)
+	if scope == nil {
+		return nil
+	}
 
-	err := h.service.Purge(c.Context(), tenantIDPtr, userID)
+	err := h.service.Purge(c.Context(), id, scope)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),

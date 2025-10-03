@@ -7,8 +7,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/ent"
+	"github.com/umardev500/go-laundry/ent/predicate"
 	"github.com/umardev500/go-laundry/ent/profile"
-	"github.com/umardev500/go-laundry/ent/tenant"
+	"github.com/umardev500/go-laundry/ent/tenantuser"
 	userEntity "github.com/umardev500/go-laundry/ent/user"
 	"github.com/umardev500/go-laundry/internal/db"
 	"github.com/umardev500/go-laundry/internal/domain/user"
@@ -38,20 +39,23 @@ func (r *repositoryImpl) FindByToken(ctx context.Context, token string) (*user.U
 }
 
 // Update implements user.Repository.
-func (r *repositoryImpl) Update(ctx context.Context, payload *user.UserUpdate, userID uuid.UUID, tenantID *uuid.UUID) (*user.User, error) {
+func (r *repositoryImpl) Update(ctx context.Context, payload *user.UserUpdate, id uuid.UUID, scope *types.Scoped) (*user.User, error) {
 	conn := r.client.GetConn(ctx)
 
 	// Fetch the user first
-	u, err := conn.User.Get(ctx, userID)
+	q := conn.User.
+		Query().
+		Where(userEntity.IDEQ(id))
+
+	// Scoping
+	q, err := applyScopeFilter(q, scope)
 	if err != nil {
 		return nil, err
 	}
 
-	// Tenant scoping check
-	if tenantID != nil {
-		if u.TenantID != nil && *tenantID != *u.TenantID {
-			return nil, fmt.Errorf("permission denied: cannot update user outside your tenant")
-		}
+	u, err := q.Only(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	// Prevent update if soft-deleted
@@ -90,7 +94,6 @@ func (r *repositoryImpl) Create(ctx context.Context, u *user.UserCreate) (*user.
 		Create().
 		SetEmail(u.Email).
 		SetPassword(u.Password).
-		SetNillableTenantID(u.TenantID).
 		Save(ctx)
 	if err != nil {
 		return nil, err
@@ -127,20 +130,22 @@ func (r *repositoryImpl) CreateProfile(ctx context.Context, userID uuid.UUID, u 
 	return &domainProfile, err
 }
 
-func (r *repositoryImpl) Delete(ctx context.Context, tenantID *uuid.UUID, userID uuid.UUID) error {
+func (r *repositoryImpl) Delete(ctx context.Context, id uuid.UUID, scope *types.Scoped) error {
 	conn := r.client.GetConn(ctx)
 
 	q := conn.User.
 		Update().
-		Where(userEntity.IDEQ(userID)).
-		Where(userEntity.IDNEQ(userID))
+		Where(userEntity.IDEQ(id)).
+		Where(userEntity.IDNEQ(id))
 
-	if tenantID != nil {
-		q = q.Where(userEntity.TenantIDEQ(*tenantID))
+	// Scoping
+	q, err := applyScopeFilter(q, scope)
+	if err != nil {
+		return err
 	}
 
 	// Soft delete
-	_, err := q.SetDeletedAt(time.Now()).Save(ctx)
+	_, err = q.SetDeletedAt(time.Now()).Save(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to soft delete user: %w", err)
 	}
@@ -166,28 +171,42 @@ func (r *repositoryImpl) FindByEmail(ctx context.Context, email string) (*user.U
 }
 
 // List implements user.Repository.
-func (r *repositoryImpl) List(ctx context.Context, filter user.UserFilter) (*types.PageData[user.User], error) {
+func (r *repositoryImpl) List(ctx context.Context, f *user.Filter) (*types.PageData[user.User], error) {
 	conn := r.client.GetConn(ctx)
 
 	// Start building query
 	q := conn.User.Query()
 
-	// Tenant scoping
-	if filter.TenantID != nil {
-		q = q.Where(userEntity.HasTenantWith(tenant.IDEQ(*filter.TenantID)))
+	// Scoping
+	switch f.Scope {
+	case types.ScopeTenant:
+		q = q.Where(
+			userEntity.HasTenantUsersWith(
+				tenantuser.IDEQ(*f.TenantID),
+			),
+		)
+	case types.ScopePlatform:
+		q = q.Where(userEntity.HasPlatformUsers())
+	case types.ScopeGlobal:
+		q = q.Where(
+			userEntity.Not(userEntity.HasTenantUsers()),
+			userEntity.Not(userEntity.HasPlatformUsers()),
+		)
+	default:
+		return nil, fmt.Errorf("invalid scope: %s", f.Scope)
 	}
 
 	// Soft delete filter
-	if !filter.IncludeDeleted {
+	if !f.IncludeDeleted {
 		q = q.Where(userEntity.DeletedAtIsNil())
 	}
 
 	// Serach by email or name
-	if filter.Query != "" {
+	if f.Query != "" {
 		q = q.Where(
 			userEntity.Or(
-				userEntity.EmailContainsFold(filter.Query),
-				userEntity.HasProfileWith(profile.NameContainsFold(filter.Query)),
+				userEntity.EmailContainsFold(f.Query),
+				userEntity.HasProfileWith(profile.NameContainsFold(f.Query)),
 			),
 		)
 	}
@@ -199,7 +218,7 @@ func (r *repositoryImpl) List(ctx context.Context, filter user.UserFilter) (*typ
 	}
 
 	// Ordering
-	switch filter.OrderBy {
+	switch f.OrderBy {
 	case user.OrderByEmailAsc:
 		q = q.Order(ent.Asc(userEntity.FieldEmail))
 	case user.OrderByEmailDesc:
@@ -214,7 +233,7 @@ func (r *repositoryImpl) List(ctx context.Context, filter user.UserFilter) (*typ
 	}
 
 	// Pagination
-	q = q.Limit(filter.Limit).Offset(filter.Offset)
+	q = q.Limit(f.Limit).Offset(f.Offset)
 
 	usersEnt, err := q.All(ctx)
 	if err != nil {
@@ -230,16 +249,18 @@ func (r *repositoryImpl) List(ctx context.Context, filter user.UserFilter) (*typ
 }
 
 // PurgeUser implements user.Repository.
-func (r *repositoryImpl) PurgeUser(ctx context.Context, tenantID *uuid.UUID, userID uuid.UUID) error {
+func (r *repositoryImpl) PurgeUser(ctx context.Context, id uuid.UUID, scope *types.Scoped) error {
 	conn := r.client.GetConn(ctx)
 
 	q := conn.User.
 		Delete().
-		Where(userEntity.IDEQ(userID)).
-		Where(userEntity.IDNEQ(userID))
+		Where(userEntity.IDEQ(id)).
+		Where(userEntity.IDNEQ(id))
 
-	if tenantID != nil {
-		q = q.Where(userEntity.TenantIDEQ(*tenantID))
+	// Scoping
+	q, err := applyScopeFilter(q, scope)
+	if err != nil {
+		return err
 	}
 
 	if _, err := q.Exec(ctx); err != nil {
@@ -287,7 +308,6 @@ func (r *repositoryImpl) mapFromEnt(e *ent.User, to *user.User) {
 	}
 
 	to.ID = e.ID
-	to.TenantID = e.TenantID
 	to.Email = e.Email
 	to.Password = e.Password
 	to.ResetToken = e.ResetToken
@@ -307,4 +327,25 @@ func (r *repositoryImpl) mapFromEnts(es []*ent.User) []*user.User {
 	}
 
 	return domainUsers
+}
+
+func applyScopeFilter[T interface {
+	Where(...predicate.User) T
+}](q T, scope *types.Scoped) (T, error) {
+	switch scope.Scope {
+	case types.ScopeTenant:
+		q = q.Where(userEntity.HasTenantUsersWith(
+			tenantuser.TenantIDEQ(*scope.TenantID),
+		))
+	case types.ScopePlatform:
+		q = q.Where(userEntity.HasPlatformUsers())
+	case types.ScopeGlobal:
+		q = q.Where(
+			userEntity.Not(userEntity.HasTenantUsers()),
+			userEntity.Not(userEntity.HasPlatformUsers()),
+		)
+	default:
+		return q, fmt.Errorf("invalid scope: %s", scope.Scope)
+	}
+	return q, nil
 }

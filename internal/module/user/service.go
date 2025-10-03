@@ -25,7 +25,7 @@ func (s *serviceImpl) FindByToken(ctx context.Context, token string) (*user.User
 }
 
 // Update implements user.Service.
-func (s *serviceImpl) Update(ctx context.Context, userID uuid.UUID, payload *user.UserUpdate, tenantID *uuid.UUID) (*user.User, error) {
+func (s *serviceImpl) Update(ctx context.Context, id uuid.UUID, payload *user.UserUpdate, scope *types.Scoped) (*user.User, error) {
 	// Hash password if provided
 	if payload.Password != nil {
 		hashed, err := bcrypt.GenerateFromPassword([]byte(*payload.Password), bcrypt.DefaultCost)
@@ -39,11 +39,11 @@ func (s *serviceImpl) Update(ctx context.Context, userID uuid.UUID, payload *use
 	}
 
 	// Delegate to repository, passing tenantID for scoping
-	return s.repo.Update(ctx, payload, userID, tenantID)
+	return s.repo.Update(ctx, payload, id, scope)
 }
 
 // List implements user.Service.
-func (s *serviceImpl) List(ctx context.Context, f user.UserFilter) (*types.PageResult[user.User], error) {
+func (s *serviceImpl) List(ctx context.Context, f *user.Filter) (*types.PageResult[user.User], error) {
 	// Apply defaults
 	f = f.WithDefaults()
 
@@ -80,13 +80,13 @@ func (s *serviceImpl) Create(ctx context.Context, u *user.UserCreate) (*user.Use
 }
 
 // Delete implements user.Service.
-func (s *serviceImpl) Delete(ctx context.Context, tenantID *uuid.UUID, userID uuid.UUID) error {
-	return s.repo.Delete(ctx, tenantID, userID)
+func (s *serviceImpl) Delete(ctx context.Context, id uuid.UUID, scope *types.Scoped) error {
+	return s.repo.Delete(ctx, id, scope)
 }
 
 // Purge implements user.Service.
-func (s *serviceImpl) Purge(ctx context.Context, tenantID *uuid.UUID, userID uuid.UUID) error {
-	return s.repo.PurgeUser(ctx, tenantID, userID)
+func (s *serviceImpl) Purge(ctx context.Context, id uuid.UUID, scope *types.Scoped) error {
+	return s.repo.PurgeUser(ctx, id, scope)
 }
 
 func (s *serviceImpl) UpdateProfile(ctx context.Context, userID uuid.UUID, u *user.ProfileUpdate) (*user.Profile, error) {

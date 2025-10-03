@@ -48,10 +48,6 @@ func (Tenant) Fields() []ent.Field {
 
 func (Tenant) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("users", User.Type).
-			Annotations(
-				entsql.OnDelete(entsql.Cascade),
-			),
 		edge.To("customers", Customer.Type).
 			Annotations(
 				entsql.OnDelete(entsql.Cascade),
@@ -93,6 +89,10 @@ func (Tenant) Edges() []ent.Edge {
 		),
 
 		edge.To("audit_logs", AuditLog.Type).Annotations(
+			entsql.OnDelete(entsql.Cascade),
+		),
+
+		edge.To("tenant_users", TenantUser.Type).Annotations(
 			entsql.OnDelete(entsql.Cascade),
 		),
 	}

@@ -3,6 +3,8 @@ package fiberutils
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/umardev500/go-laundry/internal/types"
+	"github.com/umardev500/go-laundry/pkg/response"
 )
 
 // GetTenantIDfromCtx extract the tenant_id from Fiber context locals.
@@ -25,4 +27,36 @@ func GetTenantIDfromCtx(c *fiber.Ctx) *uuid.UUID {
 		}
 	}
 	return tenantIDPtr
+}
+
+// GetScopedFromCtx builds a Scoped object from Fiber context.
+func GetScopedFromCtx(c *fiber.Ctx) *types.Scoped {
+	var tenantID *uuid.UUID
+
+	if v := c.Locals("tenant_id"); v != nil {
+		if tid, ok := v.(uuid.UUID); ok {
+			tenantID = &tid
+		}
+	}
+
+	var scope types.Scope
+	if v := c.Locals("user_scope"); v != nil {
+		scope, _ = v.(types.Scope)
+	}
+
+	s := &types.Scoped{
+		TenantID: tenantID,
+		Scope:    scope,
+	}
+
+	// ✅ run validation immediately
+	if err := s.Validate(); err != nil {
+		_ = c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
+			Success: false,
+			Error:   err.Error(),
+		})
+		return nil
+	}
+
+	return s
 }

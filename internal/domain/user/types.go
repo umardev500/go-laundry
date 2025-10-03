@@ -1,9 +1,11 @@
 package user
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/umardev500/go-laundry/internal/types"
 )
 
 type User struct {
@@ -39,16 +41,18 @@ const (
 	OrderByCreatedAtDesc UserOrderBy = "created_at_desc"
 )
 
-type UserFilter struct {
-	TenantID       *uuid.UUID  `query:"tenant_id"` // restrict to a tenant
-	Query          string      `query:"query"`     // search by email or name
-	Limit          int         `query:"limit"`     // pagination
+type Filter struct {
+	TenantID *uuid.UUID  `query:"-"`
+	Scope    types.Scope `query:"-"`
+
+	Query          string      `query:"query"` // search by email or name
+	Limit          int         `query:"limit"` // pagination
 	Offset         int         `query:"offset"`
 	OrderBy        UserOrderBy `query:"order_by"`        // e.g. "email asc", "created_at desc"
 	IncludeDeleted bool        `query:"include_deleted"` // if true, include soft-deleted users
 }
 
-func (f UserFilter) WithDefaults() UserFilter {
+func (f *Filter) WithDefaults() *Filter {
 	if f.Limit == 0 {
 		f.Limit = 10 // default page size
 	}
@@ -59,6 +63,27 @@ func (f UserFilter) WithDefaults() UserFilter {
 		f.OrderBy = "created_at desc" // default ordering
 	}
 	return f
+}
+
+func (f *Filter) Validate() error {
+	switch f.Scope {
+	case types.ScopeTenant:
+		if f.TenantID == nil {
+			return fmt.Errorf("tenant id is required")
+		}
+	case types.ScopePlatform:
+		if f.TenantID != nil {
+			return fmt.Errorf("tenant id is not allowed")
+		}
+	case types.ScopeGlobal:
+		if f.TenantID != nil {
+			return fmt.Errorf("tenant id is not allowed")
+		}
+	default:
+		return fmt.Errorf("invalid scope: %s", f.Scope)
+	}
+
+	return nil
 }
 
 type Profile struct {

@@ -3,6 +3,7 @@ package auth
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/umardev500/go-laundry/internal/module/auth/dto"
+	"github.com/umardev500/go-laundry/internal/utils/fiberutils"
 	"github.com/umardev500/go-laundry/pkg/response"
 	"github.com/umardev500/go-laundry/pkg/validator"
 )
@@ -73,7 +74,12 @@ func (h *Handler) ResetPassword(c *fiber.Ctx) error {
 		})
 	}
 
-	_, token, refreshToken, err := h.service.ResetPassword(c.Context(), req.Token, req.Password)
+	scope := fiberutils.GetScopedFromCtx(c)
+	if scope == nil {
+		return nil
+	}
+
+	_, token, refreshToken, err := h.service.ResetPassword(c.Context(), req.Token, req.Password, scope)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
 			Success: false,
@@ -106,7 +112,12 @@ func (h *Handler) RequestPasswordReset(c *fiber.Ctx) error {
 		})
 	}
 
-	err := h.service.RequestPasswordReset(c.Context(), req.Email)
+	scope := fiberutils.GetScopedFromCtx(c)
+	if scope == nil {
+		return nil
+	}
+
+	err := h.service.RequestPasswordReset(c.Context(), req.Email, scope)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
 			Success: false,

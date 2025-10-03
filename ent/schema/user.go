@@ -21,11 +21,6 @@ func (User) Fields() []ent.Field {
 			Immutable().
 			Unique(),
 
-		field.UUID("tenant_id", uuid.UUID{}).
-			Optional().
-			Nillable().
-			Comment("Needed if user is not associated with a tenant"),
-
 		field.String("email").
 			Unique().
 			NotEmpty(),
@@ -40,6 +35,11 @@ func (User) Fields() []ent.Field {
 
 		field.Time("reset_expires_at").
 			Optional().
+			Nillable(),
+
+		field.Enum("status").
+			Values("active", "suspended", "deleted").
+			Default("suspended").
 			Nillable(),
 
 		field.Time("created_at").
@@ -58,11 +58,6 @@ func (User) Fields() []ent.Field {
 
 func (User) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("tenant", Tenant.Type).
-			Ref("users").
-			Field("tenant_id").
-			Unique(),
-
 		edge.From("role", Role.Type).
 			Ref("users"),
 
@@ -90,6 +85,14 @@ func (User) Edges() []ent.Edge {
 		),
 
 		edge.To("performed_audit_logs", AuditLog.Type).Annotations(
+			entsql.OnDelete(entsql.Cascade),
+		),
+
+		edge.To("tenant_users", TenantUser.Type).Annotations(
+			entsql.OnDelete(entsql.Cascade),
+		),
+
+		edge.To("platform_users", PlatformUser.Type).Annotations(
 			entsql.OnDelete(entsql.Cascade),
 		),
 	}
