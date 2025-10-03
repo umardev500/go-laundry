@@ -1,11 +1,9 @@
 package user
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/umardev500/go-laundry/internal/types"
 )
 
 type User struct {
@@ -42,9 +40,6 @@ const (
 )
 
 type Filter struct {
-	TenantID *uuid.UUID  `query:"-"`
-	Scope    types.Scope `query:"-"`
-
 	Query          string      `query:"query"` // search by email or name
 	Limit          int         `query:"limit"` // pagination
 	Offset         int         `query:"offset"`
@@ -63,27 +58,6 @@ func (f *Filter) WithDefaults() *Filter {
 		f.OrderBy = "created_at desc" // default ordering
 	}
 	return f
-}
-
-func (f *Filter) Validate() error {
-	switch f.Scope {
-	case types.ScopeTenant:
-		if f.TenantID == nil {
-			return fmt.Errorf("tenant id is required")
-		}
-	case types.ScopePlatform:
-		if f.TenantID != nil {
-			return fmt.Errorf("tenant id is not allowed")
-		}
-	case types.ScopeGlobal:
-		if f.TenantID != nil {
-			return fmt.Errorf("tenant id is not allowed")
-		}
-	default:
-		return fmt.Errorf("invalid scope: %s", f.Scope)
-	}
-
-	return nil
 }
 
 type Profile struct {

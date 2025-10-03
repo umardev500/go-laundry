@@ -79,6 +79,8 @@ func (s *serviceImpl) Login(ctx context.Context, email, password string) (
 		TenantUsers:  tenantUsers.Data,
 	}
 
+	var tenantID = uuid.Nil
+
 	switch {
 	case res.IsAmbiguous():
 		return nil, "", "", res, auth.ErrMultipleAccountTypes
@@ -86,6 +88,11 @@ func (s *serviceImpl) Login(ctx context.Context, email, password string) (
 		scope = types.ScopePlatform
 	case res.IsSingleTenant():
 		scope = types.ScopeTenant
+		tenantID = res.TenantUsers[0].TenantID
+		user.TenantID = func() *uuid.UUID {
+			return &tenantID
+		}()
+
 	case res.IsTenantMulti():
 		return nil, "", "", res, auth.ErrMultipleTenants
 	default:
@@ -94,11 +101,6 @@ func (s *serviceImpl) Login(ctx context.Context, email, password string) (
 
 	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		return
-	}
-
-	var tenantID = uuid.Nil
-	if user.TenantID != nil {
-		tenantID = *user.TenantID
 	}
 
 	planID, err := s.repo.GetActivePlanID(ctx, tenantID)
@@ -111,7 +113,7 @@ func (s *serviceImpl) Login(ctx context.Context, email, password string) (
 		return
 	}
 
-	refreshToken, err = s.generateRefreshToken(user, planID)
+	refreshToken, err = s.generateRefreshToken(user, planID, scope)
 	if err != nil {
 		return
 	}
@@ -199,6 +201,11 @@ func (s *serviceImpl) generateJWT(u *user.User, planID uuid.UUID, scope types.Sc
 		IssuedAt(time.Now()).
 		Expiration(time.Now().Add(time.Second * time.Duration(s.cfg.JWT.ExpirySeconds)))
 
+	if scope != "" {
+		fmt.Println("no", scope)
+		builder.Claim("user_scope", scope)
+	}
+
 	if u.TenantID != nil {
 		builder.Claim("tenant_id", u.TenantID.String())
 	}
@@ -222,12 +229,16 @@ func (s *serviceImpl) generateJWT(u *user.User, planID uuid.UUID, scope types.Sc
 	return
 }
 
-func (s *serviceImpl) generateRefreshToken(u *user.User, planID uuid.UUID) (tokenStr string, err error) {
+func (s *serviceImpl) generateRefreshToken(u *user.User, planID uuid.UUID, scope types.Scope) (tokenStr string, err error) {
 	builder := jwt.NewBuilder().
 		Issuer(s.cfg.JWT.Issuer).
 		Subject(u.ID.String()).
 		IssuedAt(time.Now()).
 		Expiration(time.Now().Add(time.Second * time.Duration(s.cfg.JWT.ExpirySeconds)))
+
+	if scope != "" {
+		builder.Claim("user_scope", scope)
+	}
 
 	if u.TenantID != nil {
 		builder.Claim("tenant_id", u.TenantID.String())

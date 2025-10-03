@@ -9,6 +9,7 @@ import (
 	"github.com/umardev500/go-laundry/internal/config"
 	"github.com/umardev500/go-laundry/internal/types"
 	"github.com/umardev500/go-laundry/pkg/httputil"
+	"github.com/umardev500/go-laundry/pkg/response"
 )
 
 func CheckAuth(cfg *config.Config) fiber.Handler {
@@ -88,10 +89,20 @@ func CheckAuth(cfg *config.Config) fiber.Handler {
 		}
 
 		// Set the user id
-		c.Locals("user_id", userID)
+		var scope string
+		if err = token.Get("user_scope", &scope); err != nil {
+			log.Info().Msg("No scope found in token")
+			return c.Status(fiber.StatusUnauthorized).JSON(response.APIResponse[any]{
+				Success: false,
+				Error:   "Unauthorized",
+			})
+		} else {
+			var scopeTyped types.Scope = types.Scope(scope)
 
-		// Set user scope
-		c.Locals("user_scope", types.ScopePlatform)
+			c.Locals("user_scope", scopeTyped)
+		}
+
+		c.Locals("user_id", userID)
 
 		return c.Next()
 	}

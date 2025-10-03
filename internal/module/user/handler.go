@@ -100,8 +100,6 @@ func (h *Handler) softDelete(c *fiber.Ctx) error {
 }
 
 func (h *Handler) list(c *fiber.Ctx) error {
-	tenantIDPtr := fiberutils.GetTenantIDfromCtx(c)
-
 	// Parse query params
 	var filter user.Filter
 	if err := c.QueryParser(&filter); err != nil {
@@ -111,8 +109,12 @@ func (h *Handler) list(c *fiber.Ctx) error {
 		})
 	}
 
-	filter.TenantID = tenantIDPtr
-	result, err := h.service.List(c.Context(), &filter)
+	scope := fiberutils.GetScopedFromCtx(c)
+	if scope == nil {
+		return nil
+	}
+
+	result, err := h.service.List(c.Context(), &filter, scope)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(&response.APIResponse[any]{
 			Success: false,

@@ -43,12 +43,12 @@ func (s *serviceImpl) Update(ctx context.Context, id uuid.UUID, payload *user.Us
 }
 
 // List implements user.Service.
-func (s *serviceImpl) List(ctx context.Context, f *user.Filter) (*types.PageResult[user.User], error) {
+func (s *serviceImpl) List(ctx context.Context, f *user.Filter, scope *types.Scoped) (*types.PageResult[user.User], error) {
 	// Apply defaults
 	f = f.WithDefaults()
 
 	// Deletegate to repository
-	result, err := s.repo.List(ctx, f)
+	result, err := s.repo.List(ctx, f, scope)
 	if err != nil {
 		return nil, err
 	}

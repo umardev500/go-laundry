@@ -32,7 +32,7 @@ type Repository interface {
 	FindByToken(ctx context.Context, token string) (*User, error)
 
 	// list retrieves users based on the filter criteria
-	List(ctx context.Context, filter *Filter) (*types.PageData[User], error)
+	List(ctx context.Context, filter *Filter, scope *types.Scoped) (*types.PageData[User], error)
 
 	// PurgeUser performs a hard delete, physically removing the user record.
 	//

@@ -171,29 +171,16 @@ func (r *repositoryImpl) FindByEmail(ctx context.Context, email string) (*user.U
 }
 
 // List implements user.Repository.
-func (r *repositoryImpl) List(ctx context.Context, f *user.Filter) (*types.PageData[user.User], error) {
+func (r *repositoryImpl) List(ctx context.Context, f *user.Filter, scope *types.Scoped) (*types.PageData[user.User], error) {
 	conn := r.client.GetConn(ctx)
 
 	// Start building query
 	q := conn.User.Query()
 
 	// Scoping
-	switch f.Scope {
-	case types.ScopeTenant:
-		q = q.Where(
-			userEntity.HasTenantUsersWith(
-				tenantuser.IDEQ(*f.TenantID),
-			),
-		)
-	case types.ScopePlatform:
-		q = q.Where(userEntity.HasPlatformUsers())
-	case types.ScopeGlobal:
-		q = q.Where(
-			userEntity.Not(userEntity.HasTenantUsers()),
-			userEntity.Not(userEntity.HasPlatformUsers()),
-		)
-	default:
-		return nil, fmt.Errorf("invalid scope: %s", f.Scope)
+	q, err := applyScopeFilter(q, scope)
+	if err != nil {
+		return nil, err
 	}
 
 	// Soft delete filter
