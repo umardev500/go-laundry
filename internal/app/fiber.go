@@ -11,6 +11,7 @@ import (
 	"github.com/umardev500/go-laundry/internal/module/region"
 	"github.com/umardev500/go-laundry/internal/module/registration"
 	"github.com/umardev500/go-laundry/internal/module/role"
+	"github.com/umardev500/go-laundry/internal/module/services"
 	"github.com/umardev500/go-laundry/internal/module/subscription"
 	"github.com/umardev500/go-laundry/internal/module/upload"
 	"github.com/umardev500/go-laundry/internal/module/user"
@@ -29,6 +30,7 @@ func NewFiberApp(
 	provinceHandler *region.Handler,
 	uploadHandler *upload.Handler,
 	catHandler *category.Handler,
+	servicesHandler *services.Handler,
 ) *fiber.App {
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
@@ -50,6 +52,7 @@ func NewFiberApp(
 	provinceHandler.SetupRoutes(api)
 	uploadHandler.SetupRoutes(api)
 	catHandler.SetupRoutes(api)
+	servicesHandler.SetupRoutes(api)
 
 	return app
 }

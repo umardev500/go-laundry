@@ -6,6 +6,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 )
 
@@ -72,6 +73,15 @@ func (Services) Edges() []ent.Edge {
 		edge.From("unit", Unit.Type).
 			Ref("services").
 			Field("unit_id").
+			Unique(),
+	}
+}
+
+// Indexes of the Services.
+func (Services) Indexes() []ent.Index {
+	return []ent.Index{
+		// 👇 Composite unique constraint: (tenant_id, name)
+		index.Fields("tenant_id", "name").
 			Unique(),
 	}
 }

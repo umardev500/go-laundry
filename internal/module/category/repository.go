@@ -2,7 +2,6 @@ package category
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/ent"
@@ -101,23 +100,9 @@ func (r *repositoryImpl) List(ctx context.Context, tenantID *uuid.UUID, filter d
 func (r *repositoryImpl) Update(ctx context.Context, tenantID *uuid.UUID, id uuid.UUID, payload *domain.Update) (*domain.Category, error) {
 	conn := r.client.GetConn(ctx)
 
-	q := conn.Category.UpdateOneID(id)
-	if tenantID != nil {
-		exists, err := conn.Category.Query().Where(categoryEnt.IDEQ(id), categoryEnt.TenantIDEQ(*tenantID)).Exist(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if !exists {
-			return nil, fmt.Errorf("category not found for this tenant")
-		}
-	}
-
-	if payload.Name != nil {
-		q.SetNillableName(payload.Name)
-	}
-	if payload.Description != nil {
-		q.SetNillableDescription(payload.Description)
-	}
+	q := conn.Category.UpdateOneID(id).
+		SetNillableName(payload.Name).
+		SetNillableDescription(payload.Description)
 
 	catEnt, err := q.Save(ctx)
 	if err != nil {

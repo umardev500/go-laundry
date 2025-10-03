@@ -7,7 +7,6 @@ import (
 	domain "github.com/umardev500/go-laundry/internal/domain/category"
 	"github.com/umardev500/go-laundry/internal/types"
 	"github.com/umardev500/go-laundry/internal/utils"
-	"github.com/umardev500/go-laundry/pkg/response"
 )
 
 type serviceImpl struct {
@@ -40,20 +39,8 @@ func (s *serviceImpl) List(ctx context.Context, tenantID *uuid.UUID, f domain.Fi
 		return nil, err
 	}
 
-	page := f.Offset + 1
-	totalPages := utils.CalculateTotalPages(result.Total, f.Limit)
-
-	return &types.PageResult[domain.Category]{
-		Data: result.Data,
-		Pagination: &response.Pagination{
-			Page:       page,
-			PageSize:   f.Limit,
-			TotalItems: result.Total,
-			TotalPages: totalPages,
-			HasNext:    f.Offset+1 < totalPages,
-			HasPrev:    f.Offset > 1,
-		},
-	}, nil
+	paginatedResult := utils.Paginate(result.Data, result.Total, f.Offset, f.Limit)
+	return paginatedResult, nil
 }
 
 // Update modifies an existing category
