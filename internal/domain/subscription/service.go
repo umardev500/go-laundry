@@ -4,11 +4,12 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/umardev500/go-laundry/internal/types"
 )
 
 type Service interface {
 	// List retrieves all subscriptions
-	List(ctx context.Context, filter *Filter) ([]*Subscription, error)
+	List(ctx context.Context, filter *Filter) (*types.PageResult[Subscription], error)
 
 	// Create insertrs a new subscription
 	Create(ctx context.Context, userID uuid.UUID, payload *SubscriptionCreate) (*Subscription, error)

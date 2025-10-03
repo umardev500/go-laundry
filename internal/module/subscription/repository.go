@@ -6,7 +6,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/ent"
+	planEntity "github.com/umardev500/go-laundry/ent/plan"
 	subscriptionEntity "github.com/umardev500/go-laundry/ent/subscription"
+	tenantEntity "github.com/umardev500/go-laundry/ent/tenant"
 	"github.com/umardev500/go-laundry/internal/db"
 	"github.com/umardev500/go-laundry/internal/domain/payment"
 	paymentmethod "github.com/umardev500/go-laundry/internal/domain/payment_method"
@@ -14,6 +16,7 @@ import (
 	"github.com/umardev500/go-laundry/internal/domain/plan"
 	"github.com/umardev500/go-laundry/internal/domain/subscription"
 	"github.com/umardev500/go-laundry/internal/domain/tenant"
+	"github.com/umardev500/go-laundry/internal/types"
 	"github.com/umardev500/go-laundry/internal/utils/redisutils"
 )
 
@@ -109,7 +112,7 @@ func (r *repositoryImpl) Create(ctx context.Context, payload *subscription.Subsc
 }
 
 // List implements subscription.Repository.
-func (r *repositoryImpl) List(ctx context.Context, filter *subscription.Filter) ([]*subscription.Subscription, error) {
+func (r *repositoryImpl) List(ctx context.Context, filter *subscription.Filter) (*types.PageData[subscription.Subscription], error) {
 	conn := r.client.GetConn(ctx)
 
 	q := conn.Subscription.
@@ -117,12 +120,23 @@ func (r *repositoryImpl) List(ctx context.Context, filter *subscription.Filter) 
 
 	r.applyFilter(&q, filter)
 
+	// Count total
+	total, err := q.Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	subs, err := q.All(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return r.mapFromEnts(ctx, subs), nil
+	result, err := r.mapFromEnts(ctx, subs), nil
+
+	return &types.PageData[subscription.Subscription]{
+		Total: total,
+		Data:  result,
+	}, err
 }
 
 func (r *repositoryImpl) mapFromEnts(ctx context.Context, es []*ent.Subscription) []*subscription.Subscription {
@@ -248,6 +262,20 @@ func (r *repositoryImpl) applyFilter(q **ent.SubscriptionQuery, filter *subscrip
 
 	if filter.IncludePayment {
 		*q = (*q).WithPayments()
+	}
+
+	if filter.Query != "" {
+		*q = (*q).Where(subscriptionEntity.Or(
+			subscriptionEntity.HasTenantWith(tenantEntity.NameContainsFold(filter.Query)),
+			subscriptionEntity.HasPlanWith(planEntity.NameContainsFold(filter.Query)),
+		))
+	}
+
+	switch filter.OrderBy {
+	case subscription.OrderByCreatedAtDesc:
+		*q = (*q).Order(ent.Desc(subscriptionEntity.FieldCreatedAt))
+	default:
+		*q = (*q).Order(ent.Asc(subscriptionEntity.FieldCreatedAt))
 	}
 
 }

@@ -95,7 +95,6 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 }
 
 func (h *Handler) List(c *fiber.Ctx) error {
-
 	var filter subscription.Filter
 	if err := c.QueryParser(&filter); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
@@ -104,7 +103,7 @@ func (h *Handler) List(c *fiber.Ctx) error {
 		})
 	}
 
-	subs, err := h.service.List(c.Context(), filter.WithDefaults())
+	result, err := h.service.List(c.Context(), &filter)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(response.APIResponse[any]{
 			Success: false,
@@ -113,8 +112,9 @@ func (h *Handler) List(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(response.APIResponse[[]*subscription.Subscription]{
-		Success: true,
-		Message: "Subscriptions fetched successfully",
-		Data:    subs,
+		Success:    true,
+		Message:    "Subscriptions fetched successfully",
+		Data:       result.Data,
+		Pagination: result.Pagination,
 	})
 }

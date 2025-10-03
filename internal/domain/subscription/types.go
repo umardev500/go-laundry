@@ -33,13 +33,34 @@ type Subscription struct {
 	UpdatedAt time.Time          `json:"updated_at"`
 }
 
+type OrderBy string
+
+const (
+	OrderByCreatedAtAsc  OrderBy = "created_at_asc"
+	OrderByCreatedAtDesc OrderBy = "created_at_desc"
+)
+
 type Filter struct {
-	IncludePlan    bool `query:"include_plan"`
-	IncludeTenant  bool `query:"include_tenant"`
-	IncludePayment bool `query:"include_payment"`
+	Query          string  `query:"query"`
+	Limit          int     `query:"limit"`
+	Offset         int     `query:"offset"`
+	OrderBy        OrderBy `query:"order_by"`
+	IncludePlan    bool    `query:"include_plan"`
+	IncludeTenant  bool    `query:"include_tenant"`
+	IncludePayment bool    `query:"include_payment"`
 }
 
 func (f Filter) WithDefaults() *Filter {
+	if f.Limit == 0 {
+		f.Limit = 10
+	}
+	if f.Offset == 0 {
+		f.Offset = 0
+	}
+	if f.OrderBy == "" {
+		f.OrderBy = "created_at desc"
+	}
+
 	return &f
 }
 

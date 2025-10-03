@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/umardev500/go-laundry/internal/types"
 )
 
 // Repository defines the interface for interacting with Subscription entities.
@@ -13,7 +14,7 @@ type Repository interface {
 
 	// List retrieves all subscriptions
 	// Return a slice of subscriptions pointers and any error encountered
-	List(ctx context.Context, filter *Filter) ([]*Subscription, error)
+	List(ctx context.Context, filter *Filter) (*types.PageData[Subscription], error)
 
 	// Create inserts a new subscription from the given payload.
 	Create(ctx context.Context, payload *SubscriptionCreate) (*Subscription, error)

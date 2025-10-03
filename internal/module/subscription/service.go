@@ -9,6 +9,9 @@ import (
 	"github.com/umardev500/go-laundry/internal/domain/payment"
 	"github.com/umardev500/go-laundry/internal/domain/plan"
 	"github.com/umardev500/go-laundry/internal/domain/subscription"
+	"github.com/umardev500/go-laundry/internal/types"
+	"github.com/umardev500/go-laundry/internal/utils"
+	"github.com/umardev500/go-laundry/pkg/response"
 )
 
 type serviceImpl struct {
@@ -175,8 +178,28 @@ func (s *serviceImpl) Create(
 }
 
 // List implements subscription.Service.
-func (s *serviceImpl) List(ctx context.Context, filter *subscription.Filter) ([]*subscription.Subscription, error) {
-	return s.repo.List(ctx, filter)
+func (s *serviceImpl) List(ctx context.Context, f *subscription.Filter) (*types.PageResult[subscription.Subscription], error) {
+	f = f.WithDefaults()
+
+	result, err := s.repo.List(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+
+	page := f.Offset + 1
+	totalPages := utils.CalculateTotalPages(result.Total, f.Limit)
+
+	return &types.PageResult[subscription.Subscription]{
+		Data: result.Data,
+		Pagination: &response.Pagination{
+			Page:       page,
+			PageSize:   f.Limit,
+			TotalItems: result.Total,
+			TotalPages: totalPages,
+			HasNext:    f.Offset+1 < totalPages,
+			HasPrev:    f.Offset > 1,
+		},
+	}, nil
 }
 
 func (s *serviceImpl) createPayment(
