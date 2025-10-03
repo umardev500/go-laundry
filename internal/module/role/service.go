@@ -9,7 +9,6 @@ import (
 	"github.com/umardev500/go-laundry/internal/domain/role"
 	"github.com/umardev500/go-laundry/internal/types"
 	"github.com/umardev500/go-laundry/internal/utils"
-	"github.com/umardev500/go-laundry/pkg/response"
 )
 
 type serviceImpl struct {
@@ -60,20 +59,8 @@ func (s *serviceImpl) ListRoles(ctx context.Context, f *role.Filter, tenantID *u
 		return nil, err
 	}
 
-	page := f.Offset + 1
-	totalPages := utils.CalculateTotalPages(result.Total, f.Limit)
-
-	return &types.PageResult[role.Role]{
-		Data: result.Data,
-		Pagination: &response.Pagination{
-			Page:       page,
-			PageSize:   f.Limit,
-			TotalItems: result.Total,
-			TotalPages: totalPages,
-			HasNext:    f.Offset+1 < totalPages,
-			HasPrev:    f.Offset > 1,
-		},
-	}, nil
+	paginatedResult := utils.Paginate(result.Data, result.Total, f.Offset, f.Limit)
+	return paginatedResult, nil
 }
 
 func NewService(repo role.Repository) role.Service {

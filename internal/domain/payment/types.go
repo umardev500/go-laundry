@@ -67,7 +67,18 @@ type PaymentUpdate struct {
 	PaidAt   *time.Time
 }
 
-type PaymentFilter struct {
+type OrderBy string
+
+const (
+	OrderByCreatedAtAsc  OrderBy = "created_at_asc"
+	OrderByCreatedAtDesc OrderBy = "created_at_desc"
+)
+
+type Filter struct {
+	Query             string         `query:"query"`
+	Limit             int            `query:"limit"`
+	Offset            int            `query:"offset"`
+	OrderBy           OrderBy        `query:"order_by"`
 	Status            *Status        `query:"status"`
 	Type              *ReferenceType `query:"type"`
 	HasProof          bool           `query:"has_proof"`
@@ -76,6 +87,16 @@ type PaymentFilter struct {
 	IncludeTenant     bool           `query:"include_tenant"`
 }
 
-func (p PaymentFilter) WithDefaults() *PaymentFilter {
-	return &p
+func (f Filter) WithDefaults() *Filter {
+	if f.Limit == 0 {
+		f.Limit = 10
+	}
+	if f.Offset == 0 {
+		f.Offset = 0
+	}
+	if f.OrderBy == "" {
+		f.OrderBy = "created_at desc"
+	}
+
+	return &f
 }

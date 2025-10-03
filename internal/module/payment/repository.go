@@ -9,9 +9,11 @@ import (
 	"github.com/umardev500/go-laundry/internal/domain/payment"
 	paymentmethod "github.com/umardev500/go-laundry/internal/domain/payment_method"
 	paymentmethodtype "github.com/umardev500/go-laundry/internal/domain/payment_method_type"
+	"github.com/umardev500/go-laundry/internal/types"
 
 	paymentEntity "github.com/umardev500/go-laundry/ent/payment"
 	"github.com/umardev500/go-laundry/ent/tenant"
+	tenantEntity "github.com/umardev500/go-laundry/ent/tenant"
 )
 
 type repositoryImpl struct {
@@ -38,7 +40,7 @@ func (r *repositoryImpl) Update(ctx context.Context, payload *payment.PaymentUpd
 }
 
 // GetByID implements payment.Repository.
-func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID, filter *payment.PaymentFilter, tenantID *uuid.UUID) (*payment.Payment, error) {
+func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID, filter *payment.Filter, tenantID *uuid.UUID) (*payment.Payment, error) {
 	conn := r.client.GetConn(ctx)
 
 	q := conn.Payment.
@@ -56,20 +58,36 @@ func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID, filter *paym
 }
 
 // List implements payment.Repository.
-func (r *repositoryImpl) List(ctx context.Context, filter *payment.PaymentFilter, tenantID *uuid.UUID) ([]*payment.Payment, error) {
+func (r *repositoryImpl) List(ctx context.Context, f *payment.Filter, tenantID *uuid.UUID) (*types.PageData[payment.Payment], error) {
 	conn := r.client.GetConn(ctx)
 
 	q := conn.Payment.
 		Query()
 
-	q = r.applyPaymentFilter(q, filter, tenantID)
+	q = r.applyPaymentFilter(q, f, tenantID)
+
+	// Count total
+	total, err := q.Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Pagination
+	q = q.
+		Offset(f.Offset).
+		Limit(f.Limit)
 
 	pymnts, err := q.All(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return r.mapFromEnts(pymnts), nil
+	result := r.mapFromEnts(pymnts)
+
+	return &types.PageData[payment.Payment]{
+		Data:  result,
+		Total: total,
+	}, nil
 }
 
 // Create implements payment.Repository.
@@ -96,7 +114,7 @@ func (r *repositoryImpl) Create(ctx context.Context, payload *payment.PaymentCre
 	return r.mapFromEnt(pymnt), nil
 }
 
-func (r *repositoryImpl) applyPaymentFilter(q *ent.PaymentQuery, filter *payment.PaymentFilter, tenantID *uuid.UUID) *ent.PaymentQuery {
+func (r *repositoryImpl) applyPaymentFilter(q *ent.PaymentQuery, filter *payment.Filter, tenantID *uuid.UUID) *ent.PaymentQuery {
 	if filter.Status != nil {
 		q = q.Where(paymentEntity.StatusEQ(paymentEntity.Status(*filter.Status)))
 	}
@@ -119,6 +137,12 @@ func (r *repositoryImpl) applyPaymentFilter(q *ent.PaymentQuery, filter *payment
 
 	if tenantID != nil {
 		q = q.Where(paymentEntity.HasTenantWith(tenant.IDEQ(*tenantID)))
+	}
+
+	if filter.Query != "" {
+		q = q.Where(paymentEntity.Or(
+			paymentEntity.HasTenantWith(tenantEntity.NameContainsFold(filter.Query)),
+		))
 	}
 
 	return q

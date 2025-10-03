@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/umardev500/go-laundry/internal/types"
 )
 
 type Repository interface {
@@ -14,12 +15,12 @@ type Repository interface {
 	// filter is used to filter the payments
 	// If tenantID is provided, only payments for that tenant will be returned
 	// Return a payment pointer and any error encountered
-	GetByID(ctx context.Context, id uuid.UUID, filter *PaymentFilter, tenantID *uuid.UUID) (*Payment, error)
+	GetByID(ctx context.Context, id uuid.UUID, filter *Filter, tenantID *uuid.UUID) (*Payment, error)
 
 	// List retrieves all payments based on the provider filter
 	// If tenantID is provided, only payments for that tenant will be returned
 	// Return a list of payments and any error encountered
-	List(ctx context.Context, filter *PaymentFilter, tenantID *uuid.UUID) ([]*Payment, error)
+	List(ctx context.Context, filter *Filter, tenantID *uuid.UUID) (*types.PageData[Payment], error)
 
 	// Update updates a payment
 	// If tenantID is provided, only payments for that tenant will be returned

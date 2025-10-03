@@ -112,7 +112,7 @@ func (h *Handler) GetByID(c *fiber.Ctx) error {
 
 func (h *Handler) List(c *fiber.Ctx) error {
 	// Parse query params
-	var filter payment.PaymentFilter
+	var filter payment.Filter
 	if err := c.QueryParser(&filter); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
 			Success: false,
@@ -122,7 +122,7 @@ func (h *Handler) List(c *fiber.Ctx) error {
 
 	tenantIDPtr := fiberutils.GetTenantIDfromCtx(c)
 
-	payments, err := h.service.List(c.Context(), filter.WithDefaults(), tenantIDPtr)
+	result, err := h.service.List(c.Context(), filter.WithDefaults(), tenantIDPtr)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
 			Success: false,
@@ -131,9 +131,10 @@ func (h *Handler) List(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(response.APIResponse[[]*payment.Payment]{
-		Success: true,
-		Message: "Payments fetched successfully",
-		Data:    payments,
+		Success:    true,
+		Message:    "Payments fetched successfully",
+		Data:       result.Data,
+		Pagination: result.Pagination,
 	})
 }
 

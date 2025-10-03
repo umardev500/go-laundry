@@ -58,7 +58,7 @@ func (p *PaymentService) ProcessPayment(ctx context.Context, id, userID uuid.UUI
 			}
 		}
 
-		updatedPayment, err = p.paymentSrv.GetByID(ctx, id, &payment.PaymentFilter{
+		updatedPayment, err = p.paymentSrv.GetByID(ctx, id, &payment.Filter{
 			IncludeMethod:     true,
 			IncludeMethodType: true,
 			IncludeTenant:     true,
