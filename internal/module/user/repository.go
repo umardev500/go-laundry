@@ -1,7 +1,6 @@
 package user
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -14,14 +13,22 @@ import (
 	"github.com/umardev500/go-laundry/internal/db"
 	"github.com/umardev500/go-laundry/internal/domain/user"
 	"github.com/umardev500/go-laundry/internal/types"
+
+	appContext "github.com/umardev500/go-laundry/internal/app/context"
 )
 
 type repositoryImpl struct {
 	client *db.Client
 }
 
+func NewRepositoryImpl(client *db.Client) user.Repository {
+	return &repositoryImpl{
+		client: client,
+	}
+}
+
 // FindByToken implements user.Repository.
-func (r *repositoryImpl) FindByToken(ctx context.Context, token string) (*user.User, error) {
+func (r *repositoryImpl) FindByToken(ctx *appContext.ScopedContext, token string) (*user.User, error) {
 	conn := r.client.GetConn(ctx)
 
 	userEnt, err := conn.User.
@@ -39,7 +46,7 @@ func (r *repositoryImpl) FindByToken(ctx context.Context, token string) (*user.U
 }
 
 // Update implements user.Repository.
-func (r *repositoryImpl) Update(ctx context.Context, payload *user.UserUpdate, id uuid.UUID, scope *types.Scoped) (*user.User, error) {
+func (r *repositoryImpl) Update(ctx *appContext.ScopedContext, payload *user.UserUpdate, id uuid.UUID) (*user.User, error) {
 	conn := r.client.GetConn(ctx)
 
 	// Fetch the user first
@@ -48,7 +55,7 @@ func (r *repositoryImpl) Update(ctx context.Context, payload *user.UserUpdate, i
 		Where(userEntity.IDEQ(id))
 
 	// Scoping
-	q, err := applyScopeFilter(q, scope)
+	q, err := applyScopeFilter(q, ctx.Scoped)
 	if err != nil {
 		return nil, err
 	}
@@ -81,13 +88,7 @@ func (r *repositoryImpl) Update(ctx context.Context, payload *user.UserUpdate, i
 	return &domainUser, nil
 }
 
-func NewRepositoryImpl(client *db.Client) user.Repository {
-	return &repositoryImpl{
-		client: client,
-	}
-}
-
-func (r *repositoryImpl) Create(ctx context.Context, u *user.UserCreate) (*user.User, error) {
+func (r *repositoryImpl) Create(ctx *appContext.ScopedContext, u *user.UserCreate) (*user.User, error) {
 	conn := r.client.GetConn(ctx)
 
 	userReturned, err := conn.User.
@@ -104,7 +105,7 @@ func (r *repositoryImpl) Create(ctx context.Context, u *user.UserCreate) (*user.
 	return &result, nil
 }
 
-func (r *repositoryImpl) CreateProfile(ctx context.Context, userID uuid.UUID, u *user.ProfileCreate) (*user.Profile, error) {
+func (r *repositoryImpl) CreateProfile(ctx *appContext.ScopedContext, userID uuid.UUID, u *user.ProfileCreate) (*user.Profile, error) {
 	conn := r.client.GetConn(ctx)
 
 	profile, err := conn.Profile.
@@ -130,7 +131,7 @@ func (r *repositoryImpl) CreateProfile(ctx context.Context, userID uuid.UUID, u 
 	return &domainProfile, err
 }
 
-func (r *repositoryImpl) Delete(ctx context.Context, id uuid.UUID, scope *types.Scoped) error {
+func (r *repositoryImpl) Delete(ctx *appContext.ScopedContext, id uuid.UUID) error {
 	conn := r.client.GetConn(ctx)
 
 	q := conn.User.
@@ -139,7 +140,7 @@ func (r *repositoryImpl) Delete(ctx context.Context, id uuid.UUID, scope *types.
 		Where(userEntity.IDNEQ(id))
 
 	// Scoping
-	q, err := applyScopeFilter(q, scope)
+	q, err := applyScopeFilter(q, ctx.Scoped)
 	if err != nil {
 		return err
 	}
@@ -153,7 +154,7 @@ func (r *repositoryImpl) Delete(ctx context.Context, id uuid.UUID, scope *types.
 	return nil
 }
 
-func (r *repositoryImpl) FindByEmail(ctx context.Context, email string) (*user.User, error) {
+func (r *repositoryImpl) FindByEmail(ctx *appContext.ScopedContext, email string) (*user.User, error) {
 	conn := r.client.GetConn(ctx)
 	u, err := conn.User.
 		Query().
@@ -171,14 +172,14 @@ func (r *repositoryImpl) FindByEmail(ctx context.Context, email string) (*user.U
 }
 
 // List implements user.Repository.
-func (r *repositoryImpl) List(ctx context.Context, f *user.Filter, scope *types.Scoped) (*types.PageData[user.User], error) {
+func (r *repositoryImpl) List(ctx *appContext.ScopedContext, f *user.Filter) (*types.PageData[user.User], error) {
 	conn := r.client.GetConn(ctx)
 
 	// Start building query
 	q := conn.User.Query()
 
 	// Scoping
-	q, err := applyScopeFilter(q, scope)
+	q, err := applyScopeFilter(q, ctx.Scoped)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +237,7 @@ func (r *repositoryImpl) List(ctx context.Context, f *user.Filter, scope *types.
 }
 
 // PurgeUser implements user.Repository.
-func (r *repositoryImpl) PurgeUser(ctx context.Context, id uuid.UUID, scope *types.Scoped) error {
+func (r *repositoryImpl) PurgeUser(ctx *appContext.ScopedContext, id uuid.UUID) error {
 	conn := r.client.GetConn(ctx)
 
 	q := conn.User.
@@ -245,7 +246,7 @@ func (r *repositoryImpl) PurgeUser(ctx context.Context, id uuid.UUID, scope *typ
 		Where(userEntity.IDNEQ(id))
 
 	// Scoping
-	q, err := applyScopeFilter(q, scope)
+	q, err := applyScopeFilter(q, ctx.Scoped)
 	if err != nil {
 		return err
 	}
@@ -257,7 +258,7 @@ func (r *repositoryImpl) PurgeUser(ctx context.Context, id uuid.UUID, scope *typ
 	return nil
 }
 
-func (r *repositoryImpl) UpdateProfile(ctx context.Context, userID uuid.UUID, u *user.ProfileUpdate) (*user.Profile, error) {
+func (r *repositoryImpl) UpdateProfile(ctx *appContext.ScopedContext, userID uuid.UUID, u *user.ProfileUpdate) (*user.Profile, error) {
 	conn := r.client.GetConn(ctx)
 
 	profileEntity, err := conn.Profile.Query().
@@ -318,21 +319,21 @@ func (r *repositoryImpl) mapFromEnts(es []*ent.User) []*user.User {
 
 func applyScopeFilter[T interface {
 	Where(...predicate.User) T
-}](q T, scope *types.Scoped) (T, error) {
-	switch scope.Scope {
-	case types.ScopeTenant:
+}](q T, scoped *appContext.Scoped) (T, error) {
+	switch scoped.Scope {
+	case appContext.ScopeTenant:
 		q = q.Where(userEntity.HasTenantUsersWith(
-			tenantuser.TenantIDEQ(*scope.TenantID),
+			tenantuser.TenantIDEQ(*scoped.TenantID),
 		))
-	case types.ScopePlatform:
+	case appContext.ScopePlatform:
 		q = q.Where(userEntity.HasPlatformUsers())
-	case types.ScopeGlobal:
+	case appContext.ScopeGlobal:
 		q = q.Where(
 			userEntity.Not(userEntity.HasTenantUsers()),
 			userEntity.Not(userEntity.HasPlatformUsers()),
 		)
 	default:
-		return q, fmt.Errorf("invalid scope: %s", scope.Scope)
+		return q, fmt.Errorf("invalid scope: %s", scoped.Scope)
 	}
 	return q, nil
 }

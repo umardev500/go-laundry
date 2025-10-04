@@ -1,18 +1,18 @@
 package role
 
 import (
-	"context"
-
 	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/ent"
-	roleEntity "github.com/umardev500/go-laundry/ent/role"
 	"github.com/umardev500/go-laundry/ent/tenant"
 	"github.com/umardev500/go-laundry/ent/tenantuser"
-	userEntity "github.com/umardev500/go-laundry/ent/user"
 	"github.com/umardev500/go-laundry/internal/db"
 	"github.com/umardev500/go-laundry/internal/domain/permission"
 	"github.com/umardev500/go-laundry/internal/domain/role"
 	"github.com/umardev500/go-laundry/internal/types"
+
+	roleEntity "github.com/umardev500/go-laundry/ent/role"
+	userEntity "github.com/umardev500/go-laundry/ent/user"
+	appContext "github.com/umardev500/go-laundry/internal/app/context"
 )
 
 type repositoryImpl struct {
@@ -20,8 +20,10 @@ type repositoryImpl struct {
 }
 
 // AssignRoleToUser implements role.Repository.
-func (r *repositoryImpl) AssignRoleToUser(ctx context.Context, tenantID *uuid.UUID, userID uuid.UUID, roleID uuid.UUID) error {
+func (r *repositoryImpl) AssignRoleToUser(ctx *appContext.ScopedContext, userID uuid.UUID, roleID uuid.UUID) error {
 	conn := r.client.GetConn(ctx)
+	scoped := ctx.Scoped
+	tenantID := scoped.TenantID
 
 	userQuery := conn.User.
 		Query().
@@ -58,13 +60,14 @@ func (r *repositoryImpl) AssignRoleToUser(ctx context.Context, tenantID *uuid.UU
 }
 
 // Create implements role.Repository.
-func (r *repositoryImpl) Create(ctx context.Context, payload *role.RoleCreate, tenantID *uuid.UUID) (*role.Role, error) {
+func (r *repositoryImpl) Create(ctx *appContext.ScopedContext, payload *role.RoleCreate) (*role.Role, error) {
 	conn := r.client.GetConn(ctx)
+	scoped := ctx.Scoped
 
 	entRole, err := conn.Role.
 		Create().
 		SetName(payload.Name).
-		SetNillableTenantID(tenantID).
+		SetNillableTenantID(scoped.TenantID).
 		SetNillableDescription(payload.Description).
 		Save(ctx)
 	if err != nil {
@@ -77,12 +80,13 @@ func (r *repositoryImpl) Create(ctx context.Context, payload *role.RoleCreate, t
 }
 
 // FindByName implements role.Repository.
-func (r *repositoryImpl) FindByName(ctx context.Context, name string, tenantID *uuid.UUID) (*role.Role, error) {
+func (r *repositoryImpl) FindByName(ctx *appContext.ScopedContext, name string) (*role.Role, error) {
 	conn := r.client.GetConn(ctx)
+	scoped := ctx.Scoped
 
 	query := conn.Role.Query()
-	if tenantID != nil {
-		query = query.Where(roleEntity.HasTenantWith(tenant.IDEQ(*tenantID)))
+	if scoped.TenantID != nil {
+		query = query.Where(roleEntity.HasTenantWith(tenant.IDEQ(*scoped.TenantID)))
 	} else {
 		query = query.Where(roleEntity.TenantIDIsNil())
 	}
@@ -101,8 +105,10 @@ func (r *repositoryImpl) FindByName(ctx context.Context, name string, tenantID *
 }
 
 // List implements role.Repository.
-func (r *repositoryImpl) List(ctx context.Context, f *role.Filter, tenantID *uuid.UUID) (*types.PageData[role.Role], error) {
+func (r *repositoryImpl) List(ctx *appContext.ScopedContext, f *role.Filter) (*types.PageData[role.Role], error) {
 	conn := r.client.GetConn(ctx)
+	scoped := ctx.Scoped
+	tenantID := scoped.TenantID
 
 	q := conn.Role.Query()
 	if tenantID != nil {

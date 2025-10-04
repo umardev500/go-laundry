@@ -4,14 +4,14 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/internal/app/middleware"
 	"github.com/umardev500/go-laundry/internal/config"
 	"github.com/umardev500/go-laundry/internal/domain/role"
 	"github.com/umardev500/go-laundry/internal/module/role/dto"
-	"github.com/umardev500/go-laundry/internal/utils/fiberutils"
 	"github.com/umardev500/go-laundry/pkg/response"
 	"github.com/umardev500/go-laundry/pkg/validator"
+
+	appContext "github.com/umardev500/go-laundry/internal/app/context"
 )
 
 type Handler struct {
@@ -51,17 +51,12 @@ func (h *Handler) CreateRole(c *fiber.Ctx) error {
 		})
 	}
 
-	// userID := c.Locals("user_id").(uuid.UUID)
-	var tenantIDPtr *uuid.UUID
-	if val := c.Locals("tenant_id"); val != nil {
-		if id, ok := val.(uuid.UUID); ok && id != uuid.Nil {
-			tenantIDPtr = func() *uuid.UUID {
-				return &id
-			}()
-		}
+	scopedCtx := appContext.GetScopedContext(c)
+	if scopedCtx == nil {
+		return nil
 	}
 
-	data, err := h.service.CreateRole(c.Context(), req.ToRoleCreate(), tenantIDPtr)
+	data, err := h.service.CreateRole(scopedCtx, req.ToRoleCreate())
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
@@ -76,7 +71,6 @@ func (h *Handler) CreateRole(c *fiber.Ctx) error {
 }
 
 func (h *Handler) ListRoles(c *fiber.Ctx) error {
-	var tenantID = fiberutils.GetTenantIDfromCtx(c)
 	var filter role.Filter
 	if err := c.QueryParser(&filter); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -84,7 +78,12 @@ func (h *Handler) ListRoles(c *fiber.Ctx) error {
 		})
 	}
 
-	result, err := h.service.ListRoles(c.Context(), &filter, tenantID)
+	scopedCtx := appContext.GetScopedContext(c)
+	if scopedCtx == nil {
+		return nil
+	}
+
+	result, err := h.service.ListRoles(scopedCtx, &filter)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),

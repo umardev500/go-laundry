@@ -1,14 +1,15 @@
 package category
 
 import (
-	"context"
-
 	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/ent"
-	categoryEnt "github.com/umardev500/go-laundry/ent/category"
+	"github.com/umardev500/go-laundry/ent/predicate"
 	"github.com/umardev500/go-laundry/internal/db"
-	domain "github.com/umardev500/go-laundry/internal/domain/category"
 	"github.com/umardev500/go-laundry/internal/types"
+
+	categoryEnt "github.com/umardev500/go-laundry/ent/category"
+	appContext "github.com/umardev500/go-laundry/internal/app/context"
+	domain "github.com/umardev500/go-laundry/internal/domain/category"
 )
 
 type repositoryImpl struct {
@@ -22,7 +23,7 @@ func NewRepositoryImpl(client *db.Client) domain.Repository {
 	return &repositoryImpl{client: client}
 }
 
-func (r *repositoryImpl) Create(ctx context.Context, payload *domain.Create) (*domain.Category, error) {
+func (r *repositoryImpl) Create(ctx *appContext.ScopedContext, payload *domain.Create) (*domain.Category, error) {
 	conn := r.client.GetConn(ctx)
 
 	catEnt, err := conn.Category.
@@ -38,12 +39,16 @@ func (r *repositoryImpl) Create(ctx context.Context, payload *domain.Create) (*d
 	return mapFromEnt(catEnt), nil
 }
 
-func (r *repositoryImpl) GetByID(ctx context.Context, tenantID *uuid.UUID, id uuid.UUID) (*domain.Category, error) {
+func (r *repositoryImpl) GetByID(ctx *appContext.ScopedContext, id uuid.UUID) (*domain.Category, error) {
+	var err error
 	conn := r.client.GetConn(ctx)
+	scoped := ctx.Scoped
 
 	q := conn.Category.Query().Where(categoryEnt.IDEQ(id))
-	if tenantID != nil {
-		q = q.Where(categoryEnt.TenantIDEQ(*tenantID))
+
+	q, err = applyScopeFilter(q, scoped)
+	if err != nil {
+		return nil, err
 	}
 
 	catEnt, err := q.Only(ctx)
@@ -54,13 +59,18 @@ func (r *repositoryImpl) GetByID(ctx context.Context, tenantID *uuid.UUID, id uu
 	return mapFromEnt(catEnt), nil
 }
 
-func (r *repositoryImpl) List(ctx context.Context, tenantID *uuid.UUID, filter domain.Filter) (*types.PageData[domain.Category], error) {
+func (r *repositoryImpl) List(ctx *appContext.ScopedContext, filter domain.Filter) (*types.PageData[domain.Category], error) {
+	var err error
+
 	conn := r.client.GetConn(ctx)
+	scoped := ctx.Scoped
 
 	q := conn.Category.Query()
-	if tenantID != nil {
-		q = q.Where(categoryEnt.TenantIDEQ(*tenantID))
+	q, err = applyScopeFilter(q, scoped)
+	if err != nil {
+		return nil, err
 	}
+
 	if filter.Query != "" {
 		q = q.Where(categoryEnt.NameContainsFold(filter.Query))
 	}
@@ -97,7 +107,7 @@ func (r *repositoryImpl) List(ctx context.Context, tenantID *uuid.UUID, filter d
 	}, nil
 }
 
-func (r *repositoryImpl) Update(ctx context.Context, tenantID *uuid.UUID, id uuid.UUID, payload *domain.Update) (*domain.Category, error) {
+func (r *repositoryImpl) Update(ctx *appContext.ScopedContext, id uuid.UUID, payload *domain.Update) (*domain.Category, error) {
 	conn := r.client.GetConn(ctx)
 
 	q := conn.Category.UpdateOneID(id).
@@ -112,15 +122,32 @@ func (r *repositoryImpl) Update(ctx context.Context, tenantID *uuid.UUID, id uui
 	return mapFromEnt(catEnt), nil
 }
 
-func (r *repositoryImpl) Delete(ctx context.Context, tenantID *uuid.UUID, id uuid.UUID) error {
+func (r *repositoryImpl) Delete(ctx *appContext.ScopedContext, id uuid.UUID) error {
+	var err error
+
 	conn := r.client.GetConn(ctx)
+	scoped := ctx.Scoped
 
 	q := conn.Category.DeleteOneID(id)
-	if tenantID != nil {
-		q.Where(categoryEnt.TenantIDEQ(*tenantID))
+	q, err = applyScopeFilter(q, scoped)
+	if err != nil {
+		return err
 	}
 
 	return q.Exec(ctx)
+}
+
+func applyScopeFilter[T interface {
+	Where(...predicate.Category) T
+}](q T, scoped *appContext.Scoped) (T, error) {
+	switch scoped.Scope {
+	case appContext.ScopeTenant:
+		q = q.Where(
+			categoryEnt.TenantIDEQ(*scoped.TenantID),
+		)
+	}
+
+	return q, nil
 }
 
 func mapFromEnt(e *ent.Category) *domain.Category {

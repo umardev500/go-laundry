@@ -8,8 +8,8 @@ import (
 	"github.com/lestrrat-go/jwx/v3/jwa"
 	"github.com/lestrrat-go/jwx/v3/jwt"
 	"github.com/rs/zerolog/log"
+	"github.com/umardev500/go-laundry/internal/app/context"
 	"github.com/umardev500/go-laundry/internal/config"
-	"github.com/umardev500/go-laundry/internal/types"
 	"github.com/umardev500/go-laundry/pkg/httputil"
 	"github.com/umardev500/go-laundry/pkg/response"
 )
@@ -99,7 +99,7 @@ func CheckAuth(cfg *config.Config) fiber.Handler {
 				Error:   "Unauthorized",
 			})
 		} else {
-			var claims types.Scoped
+			var claims context.Scoped
 			data, _ := json.Marshal(scope)
 			_ = json.Unmarshal(data, &claims)
 

@@ -7,6 +7,8 @@ import (
 	"github.com/umardev500/go-laundry/internal/module/registration/dto"
 	"github.com/umardev500/go-laundry/pkg/response"
 	"github.com/umardev500/go-laundry/pkg/validator"
+
+	appContext "github.com/umardev500/go-laundry/internal/app/context"
 )
 
 type Handler struct {
@@ -44,7 +46,12 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		})
 	}
 
-	usr, err := h.service.RegisterUser(c.Context(), req.ToUserCreate())
+	scopedCtx := appContext.GetScopedContext(c)
+	if scopedCtx == nil {
+		return nil
+	}
+
+	usr, err := h.service.RegisterUser(scopedCtx, req.ToUserCreate())
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(response.APIResponse[any]{
 			Success: false,
@@ -73,7 +80,12 @@ func (h *Handler) RegisterTenant(c *fiber.Ctx) error {
 		})
 	}
 
-	usr, err := h.service.RegisterTenant(c.Context(), req.ToRegisterInput())
+	scopedCtx := appContext.GetScopedContext(c)
+	if scopedCtx == nil {
+		return nil
+	}
+
+	usr, err := h.service.RegisterTenant(scopedCtx, req.ToRegisterInput())
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),

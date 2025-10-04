@@ -1,16 +1,16 @@
 package category
 
 import (
-	"context"
-
 	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/internal/types"
+
+	appContext "github.com/umardev500/go-laundry/internal/app/context"
 )
 
 type Service interface {
-	Create(ctx context.Context, payload *Create) (*Category, error)
-	GetByID(ctx context.Context, tenantID *uuid.UUID, id uuid.UUID) (*Category, error)
-	List(ctx context.Context, tenantID *uuid.UUID, filter Filter) (*types.PageResult[Category], error)
-	Update(ctx context.Context, tenantID *uuid.UUID, id uuid.UUID, payload *Update) (*Category, error)
-	Delete(ctx context.Context, tenantID *uuid.UUID, id uuid.UUID) error
+	Create(ctx *appContext.ScopedContext, payload *Create) (*Category, error)
+	GetByID(ctx *appContext.ScopedContext, id uuid.UUID) (*Category, error)
+	List(ctx *appContext.ScopedContext, filter Filter) (*types.PageResult[Category], error)
+	Update(ctx *appContext.ScopedContext, id uuid.UUID, payload *Update) (*Category, error)
+	Delete(ctx *appContext.ScopedContext, id uuid.UUID) error
 }

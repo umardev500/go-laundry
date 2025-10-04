@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -10,21 +9,21 @@ import (
 	"github.com/lestrrat-go/jwx/v3/jwt"
 	"github.com/redis/go-redis/v9"
 	"github.com/umardev500/go-laundry/ent"
+	appContext "github.com/umardev500/go-laundry/internal/app/context"
 	"github.com/umardev500/go-laundry/internal/config"
 	"github.com/umardev500/go-laundry/internal/domain/auth"
 	platformuser "github.com/umardev500/go-laundry/internal/domain/platform_user"
 	tenantuser "github.com/umardev500/go-laundry/internal/domain/tenant_user"
 	"github.com/umardev500/go-laundry/internal/domain/user"
-	"github.com/umardev500/go-laundry/internal/types"
 	"github.com/umardev500/go-laundry/internal/utils"
 	"github.com/umardev500/go-laundry/pkg/email"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type Service interface {
-	Login(ctx context.Context, email, password string) (user *user.User, token, refreshToken string, reso *auth.LoginResolution, err error)
-	ResetPassword(ctx context.Context, token, newPassword string, scope *types.Scoped) (user *user.User, accessToken, refreshToken string, reso *auth.LoginResolution, err error)
-	RequestPasswordReset(ctx context.Context, email string, scope *types.Scoped) error
+	Login(ctx *appContext.ScopedContext, email, password string) (user *user.User, token, refreshToken string, reso *auth.LoginResolution, err error)
+	ResetPassword(ctx *appContext.ScopedContext, token, newPassword string) (user *user.User, accessToken, refreshToken string, reso *auth.LoginResolution, err error)
+	RequestPasswordReset(ctx *appContext.ScopedContext, email string) error
 }
 
 type serviceImpl struct {
@@ -54,7 +53,7 @@ func NewServiceImpl(
 	}
 }
 
-func (s *serviceImpl) Login(ctx context.Context, email, password string) (
+func (s *serviceImpl) Login(ctx *appContext.ScopedContext, email, password string) (
 	user *user.User, token, refreshToken string, reso *auth.LoginResolution, err error,
 ) {
 	user, err = s.userService.FindByEmail(ctx, email)
@@ -62,7 +61,7 @@ func (s *serviceImpl) Login(ctx context.Context, email, password string) (
 		return
 	}
 
-	var scoped *types.Scoped
+	var scoped *appContext.Scoped
 
 	platformUser, err := s.platformUserSrv.GetByUserID(ctx, user.ID)
 	if err != nil && !ent.IsNotFound(err) {
@@ -85,23 +84,23 @@ func (s *serviceImpl) Login(ctx context.Context, email, password string) (
 	case res.IsAmbiguous():
 		return nil, "", "", res, auth.ErrMultipleAccountTypes
 	case res.IsPlatformOnly():
-		scoped = &types.Scoped{
-			Scope: types.ScopePlatform,
+		scoped = &appContext.Scoped{
+			Scope: appContext.ScopePlatform,
 		}
 	case res.IsSingleTenant():
 		tenantID = res.TenantUsers[0].TenantID
-		scoped = &types.Scoped{
+		scoped = &appContext.Scoped{
 			TenantID: func() *uuid.UUID {
 				return &tenantID
 			}(),
-			Scope: types.ScopeTenant,
+			Scope: appContext.ScopeTenant,
 		}
 
 	case res.IsTenantMulti():
 		return nil, "", "", res, auth.ErrMultipleTenants
 	default:
-		scoped = &types.Scoped{
-			Scope: types.ScopeGlobal,
+		scoped = &appContext.Scoped{
+			Scope: appContext.ScopeGlobal,
 		}
 	}
 
@@ -127,7 +126,7 @@ func (s *serviceImpl) Login(ctx context.Context, email, password string) (
 	return
 }
 
-func (s *serviceImpl) ResetPassword(ctx context.Context, token, newPassword string, scope *types.Scoped) (
+func (s *serviceImpl) ResetPassword(ctx *appContext.ScopedContext, token, newPassword string) (
 	u *user.User, accessToken, refreshToken string, reso *auth.LoginResolution, err error,
 ) {
 	// Validate token, get user
@@ -142,7 +141,7 @@ func (s *serviceImpl) ResetPassword(ctx context.Context, token, newPassword stri
 	}
 
 	// Call user service to update credentials
-	updateduser, err := s.userService.Update(ctx, userData.ID, payload, scope)
+	updateduser, err := s.userService.Update(ctx, userData.ID, payload)
 	if err != nil {
 		return
 	}
@@ -152,7 +151,7 @@ func (s *serviceImpl) ResetPassword(ctx context.Context, token, newPassword stri
 		ResetToken:     func() *string { s := ""; return &s }(),
 		ResetExpiresAt: nil,
 	}
-	_, err = s.userService.Update(ctx, userData.ID, payload, scope)
+	_, err = s.userService.Update(ctx, userData.ID, payload)
 	if err != nil {
 		return
 	}
@@ -165,7 +164,7 @@ func (s *serviceImpl) ResetPassword(ctx context.Context, token, newPassword stri
 	return s.Login(ctx, updateduser.Email, newPassword)
 }
 
-func (s *serviceImpl) RequestPasswordReset(ctx context.Context, email string, scope *types.Scoped) error {
+func (s *serviceImpl) RequestPasswordReset(ctx *appContext.ScopedContext, email string) error {
 	// Find user by email
 	u, err := s.userService.FindByEmail(ctx, email)
 	if err != nil {
@@ -182,7 +181,7 @@ func (s *serviceImpl) RequestPasswordReset(ctx context.Context, email string, sc
 	}
 
 	// Call user service to update credentials
-	if _, err := s.userService.Update(ctx, u.ID, payload, scope); err != nil {
+	if _, err := s.userService.Update(ctx, u.ID, payload); err != nil {
 		return err
 	}
 
@@ -200,7 +199,7 @@ func (s *serviceImpl) RequestPasswordReset(ctx context.Context, email string, sc
 	return nil
 }
 
-func (s *serviceImpl) generateJWT(u *user.User, planID uuid.UUID, scoped types.Scoped) (tokenStr string, err error) {
+func (s *serviceImpl) generateJWT(u *user.User, planID uuid.UUID, scoped appContext.Scoped) (tokenStr string, err error) {
 	builder := jwt.NewBuilder().
 		Issuer(s.cfg.JWT.Issuer).
 		Subject(u.ID.String()).
@@ -208,7 +207,6 @@ func (s *serviceImpl) generateJWT(u *user.User, planID uuid.UUID, scoped types.S
 		Expiration(time.Now().Add(time.Second * time.Duration(s.cfg.JWT.ExpirySeconds)))
 
 	if scoped.Scope != "" {
-		fmt.Println("no", scoped)
 		builder.Claim("user_scope", scoped)
 	}
 
@@ -235,7 +233,7 @@ func (s *serviceImpl) generateJWT(u *user.User, planID uuid.UUID, scoped types.S
 	return
 }
 
-func (s *serviceImpl) generateRefreshToken(u *user.User, planID uuid.UUID, scoped types.Scoped) (tokenStr string, err error) {
+func (s *serviceImpl) generateRefreshToken(u *user.User, planID uuid.UUID, scoped appContext.Scoped) (tokenStr string, err error) {
 	builder := jwt.NewBuilder().
 		Issuer(s.cfg.JWT.Issuer).
 		Subject(u.ID.String()).
@@ -269,7 +267,7 @@ func (s *serviceImpl) generateRefreshToken(u *user.User, planID uuid.UUID, scope
 	return
 }
 
-func (s *serviceImpl) validateResetToken(ctx context.Context, token string) (*user.User, error) {
+func (s *serviceImpl) validateResetToken(ctx *appContext.ScopedContext, token string) (*user.User, error) {
 	// Find user by reset token
 	u, err := s.userService.FindByToken(ctx, token)
 	if err != nil {

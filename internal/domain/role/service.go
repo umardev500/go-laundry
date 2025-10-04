@@ -1,22 +1,22 @@
 package role
 
 import (
-	"context"
-
 	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/internal/types"
+
+	appContext "github.com/umardev500/go-laundry/internal/app/context"
 )
 
 type Service interface {
 	// AssignRoleToUser assigns a role to a user
-	AssignRoleToUser(ctx context.Context, tenantID *uuid.UUID, userID, roleID uuid.UUID) error
+	AssignRoleToUser(ctx *appContext.ScopedContext, userID, roleID uuid.UUID) error
 
 	// CreateRole creates a tenant
-	CreateRole(ctx context.Context, payload *RoleCreate, tenantID *uuid.UUID) (*Role, error)
+	CreateRole(ctx *appContext.ScopedContext, payload *RoleCreate) (*Role, error)
 
 	// GetRoleByName fetches a role by name for a tenant
-	GetRoleByName(ctx context.Context, name string, tenantID *uuid.UUID) (*Role, error)
+	GetRoleByName(ctx *appContext.ScopedContext, name string) (*Role, error)
 
 	// ListRoles fetches all roles for a tenant
-	ListRoles(ctx context.Context, filter *Filter, tenantID *uuid.UUID) (*types.PageResult[Role], error)
+	ListRoles(ctx *appContext.ScopedContext, filter *Filter) (*types.PageResult[Role], error)
 }

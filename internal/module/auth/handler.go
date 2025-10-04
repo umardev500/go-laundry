@@ -7,6 +7,8 @@ import (
 	"github.com/umardev500/go-laundry/internal/utils/fiberutils"
 	"github.com/umardev500/go-laundry/pkg/response"
 	"github.com/umardev500/go-laundry/pkg/validator"
+
+	appContext "github.com/umardev500/go-laundry/internal/app/context"
 )
 
 type Handler struct {
@@ -43,7 +45,13 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		})
 	}
 
-	_, token, refreshToken, reso, err := h.service.Login(ctx, req.Email, req.Password)
+	scoped := fiberutils.GetScopedFromLocals(c)
+	scopedContext := &appContext.ScopedContext{
+		Context: ctx,
+		Scoped:  scoped,
+	}
+
+	_, token, refreshToken, reso, err := h.service.Login(scopedContext, req.Email, req.Password)
 	if err != nil {
 		if err == auth.ErrMultipleAccountTypes {
 			return c.Status(fiber.StatusConflict).JSON(response.APIResponse[any]{
@@ -100,12 +108,12 @@ func (h *Handler) ResetPassword(c *fiber.Ctx) error {
 		})
 	}
 
-	scope := fiberutils.GetScopedFromCtx(c)
-	if scope == nil {
+	scopedCtx := appContext.GetScopedContext(c)
+	if scopedCtx == nil {
 		return nil
 	}
 
-	_, token, refreshToken, reso, err := h.service.ResetPassword(c.Context(), req.Token, req.Password, scope)
+	_, token, refreshToken, reso, err := h.service.ResetPassword(scopedCtx, req.Token, req.Password)
 	if err != nil {
 		if err == auth.ErrMultipleAccountTypes {
 			return c.Status(fiber.StatusConflict).JSON(response.APIResponse[any]{
@@ -160,12 +168,12 @@ func (h *Handler) RequestPasswordReset(c *fiber.Ctx) error {
 		})
 	}
 
-	scope := fiberutils.GetScopedFromCtx(c)
-	if scope == nil {
+	scopedCtx := appContext.GetScopedContext(c)
+	if scopedCtx == nil {
 		return nil
 	}
 
-	err := h.service.RequestPasswordReset(c.Context(), req.Email, scope)
+	err := h.service.RequestPasswordReset(scopedCtx, req.Email)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
 			Success: false,

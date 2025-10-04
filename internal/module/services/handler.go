@@ -5,11 +5,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/internal/app/middleware"
 	"github.com/umardev500/go-laundry/internal/config"
-	domain "github.com/umardev500/go-laundry/internal/domain/services"
 	"github.com/umardev500/go-laundry/internal/module/services/dto"
-	"github.com/umardev500/go-laundry/internal/utils/fiberutils"
 	"github.com/umardev500/go-laundry/pkg/response"
 	"github.com/umardev500/go-laundry/pkg/validator"
+
+	appContext "github.com/umardev500/go-laundry/internal/app/context"
+	domain "github.com/umardev500/go-laundry/internal/domain/services"
 )
 
 type Handler struct {
@@ -28,7 +29,7 @@ func NewHandler(cfg *config.Config, service domain.Service, v *validator.Validat
 
 func (h *Handler) SetupRoutes(router fiber.Router) {
 	r := router.Group("/services")
-	r.Use(middleware.CheckAuth(h.cfg))
+	r.Use(middleware.CheckAuth(h.cfg), middleware.ScopedContextMiddleware())
 
 	r.Get("/", h.list)
 	r.Get("/:id", h.getByID)
@@ -51,10 +52,13 @@ func (h *Handler) create(c *fiber.Ctx) error {
 			JSON(response.APIResponse[any]{Success: false, Error: err.Error()})
 	}
 
-	tenantID := fiberutils.GetTenantIDfromCtx(c)
-	serviceDomain := req.ToDomain(tenantID)
+	scopedCtx := appContext.GetScopedContext(c)
+	if scopedCtx == nil {
+		return nil
+	}
+	serviceDomain := req.ToDomain(scopedCtx.Scoped.TenantID)
 
-	data, err := h.service.Create(c.Context(), serviceDomain, tenantID)
+	data, err := h.service.Create(scopedCtx, serviceDomain)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).
 			JSON(response.APIResponse[any]{Success: false, Error: err.Error()})
@@ -78,9 +82,12 @@ func (h *Handler) list(c *fiber.Ctx) error {
 		IncludeCategory: c.QueryBool("include_category", false),
 	}
 
-	tenantID := fiberutils.GetTenantIDfromCtx(c)
+	scopedCtx := appContext.GetScopedContext(c)
+	if scopedCtx == nil {
+		return nil
+	}
 
-	result, err := h.service.List(c.Context(), filter, tenantID)
+	result, err := h.service.List(scopedCtx, filter)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(response.APIResponse[any]{Success: false, Error: err.Error()})
@@ -102,9 +109,12 @@ func (h *Handler) getByID(c *fiber.Ctx) error {
 			JSON(response.APIResponse[any]{Success: false, Error: "invalid service id"})
 	}
 
-	tenantID := fiberutils.GetTenantIDfromCtx(c)
+	scopedCtx := appContext.GetScopedContext(c)
+	if scopedCtx == nil {
+		return nil
+	}
 
-	data, err := h.service.GetByID(c.Context(), id, tenantID)
+	data, err := h.service.GetByID(scopedCtx, id)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).
 			JSON(response.APIResponse[any]{Success: false, Error: err.Error()})
@@ -137,10 +147,14 @@ func (h *Handler) update(c *fiber.Ctx) error {
 			JSON(response.APIResponse[any]{Success: false, Error: err.Error()})
 	}
 
-	tenantID := fiberutils.GetTenantIDfromCtx(c)
 	serviceDomain := req.ToDomain()
 
-	data, err := h.service.Update(c.Context(), id, serviceDomain, tenantID)
+	scopedCtx := appContext.GetScopedContext(c)
+	if scopedCtx == nil {
+		return nil
+	}
+
+	data, err := h.service.Update(scopedCtx, id, serviceDomain)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).
 			JSON(response.APIResponse[any]{Success: false, Error: err.Error()})
@@ -161,9 +175,12 @@ func (h *Handler) delete(c *fiber.Ctx) error {
 			JSON(response.APIResponse[any]{Success: false, Error: "invalid service id"})
 	}
 
-	tenantID := fiberutils.GetTenantIDfromCtx(c)
+	scopedCtx := appContext.GetScopedContext(c)
+	if scopedCtx == nil {
+		return nil
+	}
 
-	if err := h.service.Delete(c.Context(), id, tenantID); err != nil {
+	if err := h.service.Delete(scopedCtx, id); err != nil {
 		return c.Status(fiber.StatusBadRequest).
 			JSON(response.APIResponse[any]{Success: false, Error: err.Error()})
 	}

@@ -1,16 +1,16 @@
 package services
 
 import (
-	"context"
-
 	"github.com/google/uuid"
 	"github.com/umardev500/go-laundry/ent"
-	servicesEnt "github.com/umardev500/go-laundry/ent/services"
 	"github.com/umardev500/go-laundry/internal/db"
 	"github.com/umardev500/go-laundry/internal/domain/category"
-	domain "github.com/umardev500/go-laundry/internal/domain/services"
 	"github.com/umardev500/go-laundry/internal/domain/tenant"
 	"github.com/umardev500/go-laundry/internal/types"
+
+	servicesEnt "github.com/umardev500/go-laundry/ent/services"
+	appContext "github.com/umardev500/go-laundry/internal/app/context"
+	domain "github.com/umardev500/go-laundry/internal/domain/services"
 )
 
 type repositoryImpl struct {
@@ -24,12 +24,13 @@ func NewRepositoryImpl(client *db.Client) domain.Repository {
 }
 
 // Create a new service
-func (r *repositoryImpl) Create(ctx context.Context, payload *domain.Create, tenantID *uuid.UUID) (*domain.Services, error) {
+func (r *repositoryImpl) Create(ctx *appContext.ScopedContext, payload *domain.Create) (*domain.Services, error) {
 	conn := r.client.GetConn(ctx)
+	scoped := ctx.Scoped
 
 	svcEnt, err := conn.Services.
 		Create().
-		SetTenantID(*tenantID).
+		SetTenantID(*scoped.TenantID).
 		SetNillableCategoryID(payload.CategoryID).
 		SetName(payload.Name).
 		SetBasePrice(payload.BasePrice).
@@ -43,12 +44,12 @@ func (r *repositoryImpl) Create(ctx context.Context, payload *domain.Create, ten
 	return mapFromEnt(svcEnt), nil
 }
 
-func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID, tenantID *uuid.UUID) (*domain.Services, error) {
+func (r *repositoryImpl) GetByID(ctx *appContext.ScopedContext, id uuid.UUID) (*domain.Services, error) {
 	conn := r.client.GetConn(ctx)
 
 	q := conn.Services.Query().Where(servicesEnt.IDEQ(id))
-	if tenantID != nil {
-		q = q.Where(servicesEnt.TenantIDEQ(*tenantID))
+	if ctx.Scoped.TenantID != nil {
+		q = q.Where(servicesEnt.TenantIDEQ(*ctx.Scoped.TenantID))
 	}
 
 	svcEnt, err := q.Only(ctx)
@@ -60,11 +61,12 @@ func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID, tenantID *uu
 }
 
 // List services with filter
-func (r *repositoryImpl) List(ctx context.Context, filter *domain.Filter, tenantID *uuid.UUID) (*types.PageData[domain.Services], error) {
+func (r *repositoryImpl) List(ctx *appContext.ScopedContext, filter *domain.Filter) (*types.PageData[domain.Services], error) {
 	conn := r.client.GetConn(ctx)
+	scoped := ctx.Scoped
 
 	// apply base filters (includes ordering now)
-	q := r.applyFilter(conn.Services.Query(), filter, tenantID)
+	q := r.applyFilter(conn.Services.Query(), filter, scoped)
 
 	// count before pagination
 	total, err := q.Clone().Count(ctx)
@@ -92,8 +94,9 @@ func (r *repositoryImpl) List(ctx context.Context, filter *domain.Filter, tenant
 }
 
 // Update service by ID
-func (r *repositoryImpl) Update(ctx context.Context, id uuid.UUID, payload *domain.Update, tenantID *uuid.UUID) (*domain.Services, error) {
+func (r *repositoryImpl) Update(ctx *appContext.ScopedContext, id uuid.UUID, payload *domain.Update) (*domain.Services, error) {
 	conn := r.client.GetConn(ctx)
+	scoped := ctx.Scoped
 
 	q := conn.Services.UpdateOneID(id).
 		SetNillableName(payload.Name).
@@ -101,8 +104,8 @@ func (r *repositoryImpl) Update(ctx context.Context, id uuid.UUID, payload *doma
 		SetNillableBasePrice(payload.BasePrice).
 		SetNillableUnitID(payload.UnitID)
 
-	if tenantID != nil {
-		q = q.Where(servicesEnt.TenantIDEQ(*tenantID))
+	if scoped.TenantID != nil {
+		q = q.Where(servicesEnt.TenantIDEQ(*scoped.TenantID))
 	}
 
 	svcEnt, err := q.Save(ctx)
@@ -113,12 +116,13 @@ func (r *repositoryImpl) Update(ctx context.Context, id uuid.UUID, payload *doma
 	return mapFromEnt(svcEnt), nil
 }
 
-func (r *repositoryImpl) Delete(ctx context.Context, id uuid.UUID, tenantID *uuid.UUID) error {
+func (r *repositoryImpl) Delete(ctx *appContext.ScopedContext, id uuid.UUID) error {
 	conn := r.client.GetConn(ctx)
+	scoped := ctx.Scoped
 
 	q := conn.Services.DeleteOneID(id)
-	if tenantID != nil {
-		q = q.Where(servicesEnt.TenantIDEQ(*tenantID))
+	if scoped.TenantID != nil {
+		q = q.Where(servicesEnt.TenantIDEQ(*scoped.TenantID))
 	}
 
 	return q.Exec(ctx)
@@ -126,10 +130,10 @@ func (r *repositoryImpl) Delete(ctx context.Context, id uuid.UUID, tenantID *uui
 
 // --- helper methods ---
 
-func (r *repositoryImpl) applyFilter(q *ent.ServicesQuery, filter *domain.Filter, tenantID *uuid.UUID) *ent.ServicesQuery {
+func (r *repositoryImpl) applyFilter(q *ent.ServicesQuery, filter *domain.Filter, scoped *appContext.Scoped) *ent.ServicesQuery {
 	// tenant scoping
-	if tenantID != nil {
-		q = q.Where(servicesEnt.TenantIDEQ(*tenantID))
+	if scoped.TenantID != nil {
+		q = q.Where(servicesEnt.TenantIDEQ(*scoped.TenantID))
 	}
 
 	// search query

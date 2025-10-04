@@ -3,8 +3,9 @@ package fiberutils
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/umardev500/go-laundry/internal/types"
 	"github.com/umardev500/go-laundry/pkg/response"
+
+	appContext "github.com/umardev500/go-laundry/internal/app/context"
 )
 
 // GetTenantIDfromCtx extract the tenant_id from Fiber context locals.
@@ -18,39 +19,26 @@ import (
 //	    // tenant-scoped operation
 //	}
 func GetTenantIDfromCtx(c *fiber.Ctx) *uuid.UUID {
-	var tenantIDPtr *uuid.UUID
+	var tenantID *uuid.UUID
 	if val := c.Locals("tenant_id"); val != nil {
 		if id, ok := val.(uuid.UUID); ok && id != uuid.Nil {
-			tenantIDPtr = func() *uuid.UUID {
+			tenantID = func() *uuid.UUID {
 				return &id
 			}()
 		}
 	}
-	return tenantIDPtr
+	return tenantID
 }
 
-// GetScopedFromCtx builds a Scoped object from Fiber context.
-func GetScopedFromCtx(c *fiber.Ctx) *types.Scoped {
-	var tenantID *uuid.UUID
-
-	if v := c.Locals("tenant_id"); v != nil {
-		if tid, ok := v.(uuid.UUID); ok {
-			tenantID = &tid
-		}
-	}
-
-	var scope types.Scope
+// GetScopedFromLocals builds a Scoped object from Fiber context.
+func GetScopedFromLocals(c *fiber.Ctx) *appContext.Scoped {
+	var scope appContext.Scoped
 	if v := c.Locals("user_scope"); v != nil {
-		scope, _ = v.(types.Scope)
-	}
-
-	s := &types.Scoped{
-		TenantID: tenantID,
-		Scope:    scope,
+		scope, _ = v.(appContext.Scoped)
 	}
 
 	// ✅ run validation immediately
-	if err := s.Validate(); err != nil {
+	if err := scope.Validate(); err != nil {
 		_ = c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
 			Success: false,
 			Error:   err.Error(),
@@ -58,5 +46,5 @@ func GetScopedFromCtx(c *fiber.Ctx) *types.Scoped {
 		return nil
 	}
 
-	return s
+	return &scope
 }

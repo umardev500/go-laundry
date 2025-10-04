@@ -1,12 +1,12 @@
 package services
 
 import (
-	"context"
-
 	"github.com/google/uuid"
-	domain "github.com/umardev500/go-laundry/internal/domain/services"
 	"github.com/umardev500/go-laundry/internal/types"
 	"github.com/umardev500/go-laundry/internal/utils"
+
+	appContext "github.com/umardev500/go-laundry/internal/app/context"
+	domain "github.com/umardev500/go-laundry/internal/domain/services"
 )
 
 type serviceImpl struct {
@@ -22,19 +22,19 @@ func NewService(repo domain.Repository) domain.Service {
 }
 
 // Create a new service
-func (s *serviceImpl) Create(ctx context.Context, payload *domain.Create, tenantID *uuid.UUID) (*domain.Services, error) {
-	return s.repo.Create(ctx, payload, tenantID)
+func (s *serviceImpl) Create(ctx *appContext.ScopedContext, payload *domain.Create) (*domain.Services, error) {
+	return s.repo.Create(ctx, payload)
 }
 
 // GetByID retrieves a service by its ID (optionally tenant scoped)
-func (s *serviceImpl) GetByID(ctx context.Context, id uuid.UUID, tenantID *uuid.UUID) (*domain.Services, error) {
-	return s.repo.GetByID(ctx, id, tenantID)
+func (s *serviceImpl) GetByID(ctx *appContext.ScopedContext, id uuid.UUID) (*domain.Services, error) {
+	return s.repo.GetByID(ctx, id)
 }
 
 // List retrieves services matching the filter (optionally tenant scoped)
-func (s *serviceImpl) List(ctx context.Context, filter *domain.Filter, tenantID *uuid.UUID) (*types.PageResult[domain.Services], error) {
+func (s *serviceImpl) List(ctx *appContext.ScopedContext, filter *domain.Filter) (*types.PageResult[domain.Services], error) {
 	filter = filter.WithDefaults()
-	result, err := s.repo.List(ctx, filter, tenantID)
+	result, err := s.repo.List(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -45,11 +45,11 @@ func (s *serviceImpl) List(ctx context.Context, filter *domain.Filter, tenantID 
 }
 
 // Update modifies an existing service
-func (s *serviceImpl) Update(ctx context.Context, id uuid.UUID, payload *domain.Update, tenantID *uuid.UUID) (*domain.Services, error) {
-	return s.repo.Update(ctx, id, payload, tenantID)
+func (s *serviceImpl) Update(ctx *appContext.ScopedContext, id uuid.UUID, payload *domain.Update) (*domain.Services, error) {
+	return s.repo.Update(ctx, id, payload)
 }
 
 // Delete removes a service permanently
-func (s *serviceImpl) Delete(ctx context.Context, id uuid.UUID, tenantID *uuid.UUID) error {
-	return s.repo.Delete(ctx, id, tenantID)
+func (s *serviceImpl) Delete(ctx *appContext.ScopedContext, id uuid.UUID) error {
+	return s.repo.Delete(ctx, id)
 }

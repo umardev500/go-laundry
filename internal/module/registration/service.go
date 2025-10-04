@@ -12,8 +12,10 @@ import (
 	"github.com/umardev500/go-laundry/internal/domain/registration"
 	"github.com/umardev500/go-laundry/internal/domain/role"
 	"github.com/umardev500/go-laundry/internal/domain/tenant"
-	tenantuser "github.com/umardev500/go-laundry/internal/domain/tenant_user"
 	"github.com/umardev500/go-laundry/internal/domain/user"
+
+	appContext "github.com/umardev500/go-laundry/internal/app/context"
+	tenantuser "github.com/umardev500/go-laundry/internal/domain/tenant_user"
 )
 
 type service struct {
@@ -26,41 +28,45 @@ type service struct {
 }
 
 // RegisterUser implements registration.Service.
-func (s *service) RegisterUser(ctx context.Context, payload *registration.CreateUser) (*user.User, error) {
+func (s *service) RegisterUser(ctx *appContext.ScopedContext, payload *registration.CreateUser) (*user.User, error) {
 	var usr *user.User
 
-	err := s.client.WithTransaction(ctx, func(ctx context.Context) error {
+	err := s.client.WithTransaction(ctx, func(txCtx context.Context) error {
 		var err error
+		scopedCtx := &appContext.ScopedContext{
+			Context: ctx,
+			Scoped:  ctx.Scoped,
+		}
 
 		// Create user
-		usr, err = s.userService.Create(ctx, payload.User)
+		usr, err = s.userService.Create(scopedCtx, payload.User)
 		if err != nil {
 			return err
 		}
 
 		// Create user profile
-		_, err = s.userService.CreateProfile(ctx, usr.ID, payload.Profile)
+		_, err = s.userService.CreateProfile(scopedCtx, usr.ID, payload.Profile)
 		if err != nil {
 			return err
 		}
 
 		// -- Assign role ---
-		role, err := s.roleService.GetRoleByName(ctx, "customer", nil)
+		role, err := s.roleService.GetRoleByName(ctx, "customer")
 		if err != nil {
 			return err
 		}
 
-		err = s.roleService.AssignRoleToUser(ctx, nil, usr.ID, role.ID)
+		err = s.roleService.AssignRoleToUser(ctx, usr.ID, role.ID)
 		if err != nil {
 			return err
 		}
 
 		// Assign default permissions to user
-		defaultPermissions, err := s.getDefaultPermissions(ctx)
+		defaultPermissions, err := s.getDefaultPermissions(txCtx)
 		if err != nil {
 			return err
 		}
-		err = s.permissionService.AssignPermissionsToRole(ctx, role.ID, defaultPermissions)
+		err = s.permissionService.AssignPermissionsToRole(txCtx, role.ID, defaultPermissions)
 		if err != nil {
 			return err
 		}
@@ -95,15 +101,15 @@ func NewService(
 	}
 }
 
-func (s *service) RegisterTenant(ctx context.Context, data *registration.CreateTenantUser) (tnt *tenant.Tenant, err error) {
+func (s *service) RegisterTenant(ctx *appContext.ScopedContext, data *registration.CreateTenantUser) (tnt *tenant.Tenant, err error) {
 	defaultPermissions, err := s.getDefaultPermissions(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.client.WithTransaction(ctx, func(ctx context.Context) error {
+	err = s.client.WithTransaction(ctx, func(txCtx context.Context) error {
 		// Create tenant first
-		t, err := s.tenantService.CreateTenant(ctx, data.Tenant)
+		t, err := s.tenantService.CreateTenant(txCtx, data.Tenant)
 		if err != nil {
 			return err
 		}
@@ -124,10 +130,7 @@ func (s *service) RegisterTenant(ctx context.Context, data *registration.CreateT
 				desc := "Tenant admin"
 				return &desc
 			}(),
-		}, func() *uuid.UUID {
-			id := t.ID
-			return &id
-		}())
+		})
 		if err != nil {
 			return err
 		}
@@ -154,7 +157,7 @@ func (s *service) RegisterTenant(ctx context.Context, data *registration.CreateT
 		}
 
 		// Create tenant user
-		_, err = s.tenantUserService.Create(ctx, &tenantuser.Create{
+		_, err = s.tenantUserService.Create(txCtx, &tenantuser.Create{
 			UserID:   usr.ID,
 			TenantID: *tenantID,
 		})
@@ -163,7 +166,7 @@ func (s *service) RegisterTenant(ctx context.Context, data *registration.CreateT
 		}
 
 		// Assign role to user
-		err = s.roleService.AssignRoleToUser(ctx, tenantID, usr.ID, tenantRole.ID)
+		err = s.roleService.AssignRoleToUser(ctx, usr.ID, tenantRole.ID)
 		if err != nil {
 			fmt.Println(usr.ID)
 			log.Error().Err(err).Msg("failed to create user profile")
@@ -171,7 +174,7 @@ func (s *service) RegisterTenant(ctx context.Context, data *registration.CreateT
 		}
 
 		// Assign default permissions to user
-		err = s.permissionService.AssignPermissionsToRole(ctx, tenantRole.ID, defaultPermissions)
+		err = s.permissionService.AssignPermissionsToRole(txCtx, tenantRole.ID, defaultPermissions)
 		if err != nil {
 			return err
 		}

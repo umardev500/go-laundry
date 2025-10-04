@@ -1,12 +1,12 @@
 package category
 
 import (
-	"context"
-
 	"github.com/google/uuid"
-	domain "github.com/umardev500/go-laundry/internal/domain/category"
 	"github.com/umardev500/go-laundry/internal/types"
 	"github.com/umardev500/go-laundry/internal/utils"
+
+	appContext "github.com/umardev500/go-laundry/internal/app/context"
+	domain "github.com/umardev500/go-laundry/internal/domain/category"
 )
 
 type serviceImpl struct {
@@ -22,19 +22,19 @@ func NewService(repo domain.Repository) domain.Service {
 }
 
 // Create a new category
-func (s *serviceImpl) Create(ctx context.Context, payload *domain.Create) (*domain.Category, error) {
+func (s *serviceImpl) Create(ctx *appContext.ScopedContext, payload *domain.Create) (*domain.Category, error) {
 	return s.repo.Create(ctx, payload)
 }
 
 // GetByID retrieves a category by its ID (optionally tenant scoped)
-func (s *serviceImpl) GetByID(ctx context.Context, tenantID *uuid.UUID, id uuid.UUID) (*domain.Category, error) {
-	return s.repo.GetByID(ctx, tenantID, id)
+func (s *serviceImpl) GetByID(ctx *appContext.ScopedContext, id uuid.UUID) (*domain.Category, error) {
+	return s.repo.GetByID(ctx, id)
 }
 
 // List retrieves categories matching the filter (optionally tenant scoped)
-func (s *serviceImpl) List(ctx context.Context, tenantID *uuid.UUID, f domain.Filter) (*types.PageResult[domain.Category], error) {
+func (s *serviceImpl) List(ctx *appContext.ScopedContext, f domain.Filter) (*types.PageResult[domain.Category], error) {
 	f = f.WithDefaults()
-	result, err := s.repo.List(ctx, tenantID, f)
+	result, err := s.repo.List(ctx, f)
 	if err != nil {
 		return nil, err
 	}
@@ -44,11 +44,11 @@ func (s *serviceImpl) List(ctx context.Context, tenantID *uuid.UUID, f domain.Fi
 }
 
 // Update modifies an existing category
-func (s *serviceImpl) Update(ctx context.Context, tenantID *uuid.UUID, id uuid.UUID, payload *domain.Update) (*domain.Category, error) {
-	return s.repo.Update(ctx, tenantID, id, payload)
+func (s *serviceImpl) Update(ctx *appContext.ScopedContext, id uuid.UUID, payload *domain.Update) (*domain.Category, error) {
+	return s.repo.Update(ctx, id, payload)
 }
 
 // Delete removes a category permanently
-func (s *serviceImpl) Delete(ctx context.Context, tenantID *uuid.UUID, id uuid.UUID) error {
-	return s.repo.Delete(ctx, tenantID, id)
+func (s *serviceImpl) Delete(ctx *appContext.ScopedContext, id uuid.UUID) error {
+	return s.repo.Delete(ctx, id)
 }

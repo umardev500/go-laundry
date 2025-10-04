@@ -1,7 +1,6 @@
 package role
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -9,6 +8,8 @@ import (
 	"github.com/umardev500/go-laundry/internal/domain/role"
 	"github.com/umardev500/go-laundry/internal/types"
 	"github.com/umardev500/go-laundry/internal/utils"
+
+	appContext "github.com/umardev500/go-laundry/internal/app/context"
 )
 
 type serviceImpl struct {
@@ -16,14 +17,17 @@ type serviceImpl struct {
 }
 
 // AssignRoleToUser implements role.Service.
-func (s *serviceImpl) AssignRoleToUser(ctx context.Context, tenantID *uuid.UUID, userID uuid.UUID, roleID uuid.UUID) error {
-	return s.repo.AssignRoleToUser(ctx, tenantID, userID, roleID)
+func (s *serviceImpl) AssignRoleToUser(ctx *appContext.ScopedContext, userID uuid.UUID, roleID uuid.UUID) error {
+	return s.repo.AssignRoleToUser(ctx, userID, roleID)
 }
 
 // CreateRole implements role.Service.
-func (s *serviceImpl) CreateRole(ctx context.Context, payload *role.RoleCreate, tenantID *uuid.UUID) (*role.Role, error) {
+func (s *serviceImpl) CreateRole(ctx *appContext.ScopedContext, payload *role.RoleCreate) (*role.Role, error) {
+	scoped := ctx.Scoped
+	tenantID := scoped.TenantID
+
 	// Check if role arelady exist for this tenant or globally
-	existingRole, err := s.repo.FindByName(ctx, payload.Name, tenantID)
+	existingRole, err := s.repo.FindByName(ctx, payload.Name)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
@@ -37,7 +41,7 @@ func (s *serviceImpl) CreateRole(ctx context.Context, payload *role.RoleCreate, 
 	}
 
 	// Create the role
-	newRole, err := s.repo.Create(ctx, payload, tenantID)
+	newRole, err := s.repo.Create(ctx, payload)
 	if err != nil {
 		return nil, err
 	}
@@ -46,15 +50,15 @@ func (s *serviceImpl) CreateRole(ctx context.Context, payload *role.RoleCreate, 
 }
 
 // GetRoleByName implements role.Service.
-func (s *serviceImpl) GetRoleByName(ctx context.Context, name string, tenantID *uuid.UUID) (*role.Role, error) {
-	return s.repo.FindByName(ctx, name, tenantID)
+func (s *serviceImpl) GetRoleByName(ctx *appContext.ScopedContext, name string) (*role.Role, error) {
+	return s.repo.FindByName(ctx, name)
 }
 
 // ListRoles implements role.Service.
-func (s *serviceImpl) ListRoles(ctx context.Context, f *role.Filter, tenantID *uuid.UUID) (*types.PageResult[role.Role], error) {
+func (s *serviceImpl) ListRoles(ctx *appContext.ScopedContext, f *role.Filter) (*types.PageResult[role.Role], error) {
 	f = f.WithDefaults()
 
-	result, err := s.repo.List(ctx, f, tenantID)
+	result, err := s.repo.List(ctx, f)
 	if err != nil {
 		return nil, err
 	}

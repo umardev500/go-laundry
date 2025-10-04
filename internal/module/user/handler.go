@@ -10,6 +10,8 @@ import (
 	"github.com/umardev500/go-laundry/internal/utils/fiberutils"
 	"github.com/umardev500/go-laundry/pkg/response"
 	"github.com/umardev500/go-laundry/pkg/validator"
+
+	appContext "github.com/umardev500/go-laundry/internal/app/context"
 )
 
 type Handler struct {
@@ -29,7 +31,7 @@ func NewHandler(cfg *config.Config, v *validator.Validator, service user.Service
 func (h *Handler) SetupRoutes(router fiber.Router) {
 	r := router.Group("/users")
 
-	r.Use(middleware.CheckAuth(h.cfg))
+	r.Use(middleware.CheckAuth(h.cfg), middleware.ScopedContextMiddleware())
 	r.Get("/", h.list)
 	r.Post("/", h.createUser)
 	r.Put("/profile", h.updateProfile)
@@ -51,26 +53,19 @@ func (h *Handler) createUser(c *fiber.Ctx) error {
 		})
 	}
 
-	var tenantIDPtr *uuid.UUID
-	if val := c.Locals("tenant_id"); val != nil {
-		if id, ok := val.(uuid.UUID); ok && id != uuid.Nil {
-			tenantIDPtr = func() *uuid.UUID {
-				return &id
-			}()
-		}
-	}
+	var tenantID = fiberutils.GetTenantIDfromCtx(c)
 
-	data, err := h.service.Create(c.Context(), req.ToUserCreate(tenantIDPtr))
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
+	// data, err := h.service.Create(c.Context(), req.ToUserCreate(tenantID))
+	// if err != nil {
+	// 	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+	// 		"error": err.Error(),
+	// 	})
+	// }
 
-	return c.JSON(response.APIResponse[*user.User]{
+	return c.JSON(response.APIResponse[*uuid.UUID]{
 		Success: true,
 		Message: "User created successfully",
-		Data:    data,
+		Data:    tenantID,
 	})
 }
 
@@ -80,12 +75,12 @@ func (h *Handler) softDelete(c *fiber.Ctx) error {
 		return nil // helper already wrote the response
 	}
 
-	scope := fiberutils.GetScopedFromCtx(c)
-	if scope == nil {
+	scopedCtx := appContext.GetScopedContext(c)
+	if scopedCtx == nil {
 		return nil
 	}
 
-	err := h.service.Delete(c.Context(), id, scope)
+	err := h.service.Delete(scopedCtx, id)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.APIResponse[any]{
 			Success: false,
@@ -109,12 +104,12 @@ func (h *Handler) list(c *fiber.Ctx) error {
 		})
 	}
 
-	scope := fiberutils.GetScopedFromCtx(c)
-	if scope == nil {
+	scopedCtx := appContext.GetScopedContext(c)
+	if scopedCtx == nil {
 		return nil
 	}
 
-	result, err := h.service.List(c.Context(), &filter, scope)
+	result, err := h.service.List(scopedCtx, &filter)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(&response.APIResponse[any]{
 			Success: false,
@@ -136,12 +131,12 @@ func (h *Handler) purge(c *fiber.Ctx) error {
 		return nil // helper already wrote the response
 	}
 
-	scope := fiberutils.GetScopedFromCtx(c)
-	if scope == nil {
+	scopedCtx := appContext.GetScopedContext(c)
+	if scopedCtx == nil {
 		return nil
 	}
 
-	err := h.service.Purge(c.Context(), id, scope)
+	err := h.service.Purge(scopedCtx, id)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
@@ -170,11 +165,12 @@ func (h *Handler) updateProfile(c *fiber.Ctx) error {
 
 	userID := c.Locals("user_id").(uuid.UUID)
 
-	data, err := h.service.UpdateProfile(
-		c.Context(),
-		userID,
-		req.ToUserProfileUpdate(),
-	)
+	scopedCtx := appContext.GetScopedContext(c)
+	if scopedCtx == nil {
+		return nil
+	}
+
+	data, err := h.service.UpdateProfile(scopedCtx, userID, req.ToUserProfileUpdate())
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
