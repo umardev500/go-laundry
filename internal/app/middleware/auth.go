@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"encoding/json"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/lestrrat-go/jwx/v3/jwa"
@@ -89,17 +91,19 @@ func CheckAuth(cfg *config.Config) fiber.Handler {
 		}
 
 		// Set the user id
-		var scope string
+		var scope map[string]any
 		if err = token.Get("user_scope", &scope); err != nil {
-			log.Info().Msg("No scope found in token")
+			log.Error().Err(err).Msg("No scope found in token")
 			return c.Status(fiber.StatusUnauthorized).JSON(response.APIResponse[any]{
 				Success: false,
 				Error:   "Unauthorized",
 			})
 		} else {
-			var scopeTyped types.Scope = types.Scope(scope)
+			var claims types.Scoped
+			data, _ := json.Marshal(scope)
+			_ = json.Unmarshal(data, &claims)
 
-			c.Locals("user_scope", scopeTyped)
+			c.Locals("user_scope", claims)
 		}
 
 		c.Locals("user_id", userID)

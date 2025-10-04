@@ -62,7 +62,7 @@ func (s *serviceImpl) Login(ctx context.Context, email, password string) (
 		return
 	}
 
-	var scope types.Scope
+	var scoped *types.Scoped
 
 	platformUser, err := s.platformUserSrv.GetByUserID(ctx, user.ID)
 	if err != nil && !ent.IsNotFound(err) {
@@ -85,18 +85,24 @@ func (s *serviceImpl) Login(ctx context.Context, email, password string) (
 	case res.IsAmbiguous():
 		return nil, "", "", res, auth.ErrMultipleAccountTypes
 	case res.IsPlatformOnly():
-		scope = types.ScopePlatform
+		scoped = &types.Scoped{
+			Scope: types.ScopePlatform,
+		}
 	case res.IsSingleTenant():
-		scope = types.ScopeTenant
 		tenantID = res.TenantUsers[0].TenantID
-		user.TenantID = func() *uuid.UUID {
-			return &tenantID
-		}()
+		scoped = &types.Scoped{
+			TenantID: func() *uuid.UUID {
+				return &tenantID
+			}(),
+			Scope: types.ScopeTenant,
+		}
 
 	case res.IsTenantMulti():
 		return nil, "", "", res, auth.ErrMultipleTenants
 	default:
-		scope = types.ScopeGlobal
+		scoped = &types.Scoped{
+			Scope: types.ScopeGlobal,
+		}
 	}
 
 	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
@@ -108,12 +114,12 @@ func (s *serviceImpl) Login(ctx context.Context, email, password string) (
 		return
 	}
 
-	token, err = s.generateJWT(user, planID, scope)
+	token, err = s.generateJWT(user, planID, *scoped)
 	if err != nil {
 		return
 	}
 
-	refreshToken, err = s.generateRefreshToken(user, planID, scope)
+	refreshToken, err = s.generateRefreshToken(user, planID, *scoped)
 	if err != nil {
 		return
 	}
@@ -194,20 +200,20 @@ func (s *serviceImpl) RequestPasswordReset(ctx context.Context, email string, sc
 	return nil
 }
 
-func (s *serviceImpl) generateJWT(u *user.User, planID uuid.UUID, scope types.Scope) (tokenStr string, err error) {
+func (s *serviceImpl) generateJWT(u *user.User, planID uuid.UUID, scoped types.Scoped) (tokenStr string, err error) {
 	builder := jwt.NewBuilder().
 		Issuer(s.cfg.JWT.Issuer).
 		Subject(u.ID.String()).
 		IssuedAt(time.Now()).
 		Expiration(time.Now().Add(time.Second * time.Duration(s.cfg.JWT.ExpirySeconds)))
 
-	if scope != "" {
-		fmt.Println("no", scope)
-		builder.Claim("user_scope", scope)
+	if scoped.Scope != "" {
+		fmt.Println("no", scoped)
+		builder.Claim("user_scope", scoped)
 	}
 
-	if u.TenantID != nil {
-		builder.Claim("tenant_id", u.TenantID.String())
+	if scoped.TenantID != nil {
+		builder.Claim("tenant_id", scoped.TenantID.String())
 	}
 
 	if planID != uuid.Nil {
@@ -229,19 +235,19 @@ func (s *serviceImpl) generateJWT(u *user.User, planID uuid.UUID, scope types.Sc
 	return
 }
 
-func (s *serviceImpl) generateRefreshToken(u *user.User, planID uuid.UUID, scope types.Scope) (tokenStr string, err error) {
+func (s *serviceImpl) generateRefreshToken(u *user.User, planID uuid.UUID, scoped types.Scoped) (tokenStr string, err error) {
 	builder := jwt.NewBuilder().
 		Issuer(s.cfg.JWT.Issuer).
 		Subject(u.ID.String()).
 		IssuedAt(time.Now()).
 		Expiration(time.Now().Add(time.Second * time.Duration(s.cfg.JWT.ExpirySeconds)))
 
-	if scope != "" {
-		builder.Claim("user_scope", scope)
+	if scoped.Scope != "" {
+		builder.Claim("user_scope", scoped)
 	}
 
-	if u.TenantID != nil {
-		builder.Claim("tenant_id", u.TenantID.String())
+	if scoped.TenantID != nil {
+		builder.Claim("tenant_id", scoped.TenantID.String())
 	}
 
 	if planID != uuid.Nil {

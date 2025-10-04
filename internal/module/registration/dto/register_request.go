@@ -7,13 +7,13 @@ import (
 )
 
 type RegisterRequest struct {
-	Tenant  TenantInfo         `json:"tenant" validate:"required,dive"`
-	Profile user.ProfileCreate `json:"profile" validate:"required,dive"`
-	Creds   Creds              `json:"user" validate:"required,dive"`
+	Tenant  TenantInfo         `json:"tenant" validate:"required"`
+	Profile user.ProfileCreate `json:"profile" validate:"required"`
+	Creds   Creds              `json:"user" validate:"required"`
 }
 
-func (r *RegisterRequest) ToRegisterInput() *registration.RegisterInput {
-	return &registration.RegisterInput{
+func (r *RegisterRequest) ToRegisterInput() *registration.CreateTenantUser {
+	return &registration.CreateTenantUser{
 		Tenant:  r.Tenant.ToTenantCreate(),
 		Profile: &r.Profile,
 		User:    r.Creds.ToCreds(),
@@ -33,17 +33,5 @@ func (t TenantInfo) ToTenantCreate() *tenant.TenantCreate {
 		Phone:   t.Phone,
 		Email:   t.Email,
 		Address: t.Address,
-	}
-}
-
-type Creds struct {
-	Email    string `json:"email" validate:"email"`
-	Password string `json:"password" validate:"required"`
-}
-
-func (c Creds) ToCreds() *user.UserCreate {
-	return &user.UserCreate{
-		Email:    c.Email,
-		Password: c.Password,
 	}
 }

@@ -5,7 +5,7 @@ import (
 	"github.com/umardev500/go-laundry/internal/domain/user"
 )
 
-type RegisterInput struct {
+type CreateTenantUser struct {
 	Tenant  *tenant.TenantCreate
 	Profile *user.ProfileCreate
 	User    *user.UserCreate

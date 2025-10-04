@@ -5,11 +5,13 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"github.com/umardev500/go-laundry/internal/db"
 	"github.com/umardev500/go-laundry/internal/domain/permission"
 	"github.com/umardev500/go-laundry/internal/domain/registration"
 	"github.com/umardev500/go-laundry/internal/domain/role"
 	"github.com/umardev500/go-laundry/internal/domain/tenant"
+	tenantuser "github.com/umardev500/go-laundry/internal/domain/tenant_user"
 	"github.com/umardev500/go-laundry/internal/domain/user"
 )
 
@@ -17,13 +19,67 @@ type service struct {
 	userService       user.Service
 	tenantService     tenant.Service
 	roleService       role.Service
+	tenantUserService tenantuser.Service
 	permissionService permission.Service
 	client            *db.Client
 }
 
+// RegisterUser implements registration.Service.
+func (s *service) RegisterUser(ctx context.Context, payload *registration.CreateUser) (*user.User, error) {
+	var usr *user.User
+
+	err := s.client.WithTransaction(ctx, func(ctx context.Context) error {
+		var err error
+
+		// Create user
+		usr, err = s.userService.Create(ctx, payload.User)
+		if err != nil {
+			return err
+		}
+
+		// Create user profile
+		_, err = s.userService.CreateProfile(ctx, usr.ID, payload.Profile)
+		if err != nil {
+			return err
+		}
+
+		// -- Assign role ---
+		role, err := s.roleService.GetRoleByName(ctx, "customer", nil)
+		if err != nil {
+			return err
+		}
+
+		err = s.roleService.AssignRoleToUser(ctx, nil, usr.ID, role.ID)
+		if err != nil {
+			return err
+		}
+
+		// Assign default permissions to user
+		defaultPermissions, err := s.getDefaultPermissions(ctx)
+		if err != nil {
+			return err
+		}
+		err = s.permissionService.AssignPermissionsToRole(ctx, role.ID, defaultPermissions)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return usr, nil
+}
+
+// Ensure serviceImpl implements the domain Service interface
+var _ registration.Service = (*service)(nil)
+
 func NewService(
 	userService user.Service,
 	tenantService tenant.Service,
+	tenantUserService tenantuser.Service,
 	roleService role.Service,
 	permissionService permission.Service,
 	client *db.Client,
@@ -31,13 +87,14 @@ func NewService(
 	return &service{
 		userService:       userService,
 		tenantService:     tenantService,
+		tenantUserService: tenantUserService,
 		roleService:       roleService,
 		permissionService: permissionService,
 		client:            client,
 	}
 }
 
-func (s *service) RegisterTenant(ctx context.Context, data *registration.RegisterInput) (usr *user.User, err error) {
+func (s *service) RegisterTenant(ctx context.Context, data *registration.CreateTenantUser) (usr *user.User, err error) {
 	defaultPermissions, err := s.getDefaultPermissions(ctx)
 	if err != nil {
 		return nil, err
@@ -50,12 +107,12 @@ func (s *service) RegisterTenant(ctx context.Context, data *registration.Registe
 			return err
 		}
 
-		tenantIDPtr := func() *uuid.UUID {
+		tenantID := func() *uuid.UUID {
 			id := t.ID
 			return &id
 		}()
 
-		data.User.TenantID = tenantIDPtr
+		data.User.TenantID = tenantID
 
 		// Create default tenant role
 		tenantRole, err := s.roleService.CreateRole(ctx, &role.RoleCreate{
@@ -84,9 +141,20 @@ func (s *service) RegisterTenant(ctx context.Context, data *registration.Registe
 			return err
 		}
 
-		// Assign role to user
-		err = s.roleService.AssignRoleToUser(ctx, tenantIDPtr, usr.ID, tenantRole.ID)
+		// Create tenant user
+		_, err = s.tenantUserService.Create(ctx, &tenantuser.Create{
+			UserID:   usr.ID,
+			TenantID: *tenantID,
+		})
 		if err != nil {
+			return err
+		}
+
+		// Assign role to user
+		err = s.roleService.AssignRoleToUser(ctx, tenantID, usr.ID, tenantRole.ID)
+		if err != nil {
+			fmt.Println(usr.ID)
+			log.Error().Err(err).Msg("failed to create user profile")
 			return err
 		}
 
