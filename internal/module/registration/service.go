@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"github.com/umardev500/go-laundry/ent"
 	"github.com/umardev500/go-laundry/internal/db"
 	"github.com/umardev500/go-laundry/internal/domain/permission"
 	"github.com/umardev500/go-laundry/internal/domain/registration"
@@ -94,7 +95,7 @@ func NewService(
 	}
 }
 
-func (s *service) RegisterTenant(ctx context.Context, data *registration.CreateTenantUser) (usr *user.User, err error) {
+func (s *service) RegisterTenant(ctx context.Context, data *registration.CreateTenantUser) (tnt *tenant.Tenant, err error) {
 	defaultPermissions, err := s.getDefaultPermissions(ctx)
 	if err != nil {
 		return nil, err
@@ -114,6 +115,8 @@ func (s *service) RegisterTenant(ctx context.Context, data *registration.CreateT
 
 		data.User.TenantID = tenantID
 
+		var usr *user.User
+
 		// Create default tenant role
 		tenantRole, err := s.roleService.CreateRole(ctx, &role.RoleCreate{
 			Name: "admin",
@@ -129,10 +132,19 @@ func (s *service) RegisterTenant(ctx context.Context, data *registration.CreateT
 			return err
 		}
 
-		// Create user
-		usr, err = s.userService.Create(ctx, data.User)
-		if err != nil {
-			return err
+		// Try to find existing user
+		existingUser, err := s.userService.FindByEmail(ctx, data.User.Email)
+		if err == nil {
+			usr = existingUser
+		} else if ent.IsNotFound(err) {
+			// Not found -> create new user
+			usr, err = s.userService.Create(ctx, data.User)
+			if err != nil {
+				return err
+			}
+		} else {
+			// Unexpected error
+			return fmt.Errorf("failed to check user existence: %w", err)
 		}
 
 		// Create user profile
@@ -163,6 +175,8 @@ func (s *service) RegisterTenant(ctx context.Context, data *registration.CreateT
 		if err != nil {
 			return err
 		}
+
+		tnt = t
 
 		return nil
 	})

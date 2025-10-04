@@ -2,6 +2,7 @@ package registration
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/umardev500/go-laundry/internal/domain/tenant"
 	"github.com/umardev500/go-laundry/internal/domain/user"
 	"github.com/umardev500/go-laundry/internal/module/registration/dto"
 	"github.com/umardev500/go-laundry/pkg/response"
@@ -79,7 +80,7 @@ func (h *Handler) RegisterTenant(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.JSON(response.APIResponse[*user.User]{
+	return c.JSON(response.APIResponse[*tenant.Tenant]{
 		Success: true,
 		Message: "Register successful",
 		Data:    usr,
