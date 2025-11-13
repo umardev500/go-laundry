@@ -1,0 +1,46 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, build output, and coverage files
+*.test
+*.out
+
+# Output of the go build command
+/bin/
+/build/
+/dist/
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Vendor dependencies (if not vendored intentionally)
+vendor/
+
+# IDE/editor files
+.idea/
+*.swp
+*.swo
+*.DS_Store
+
+# Logs and temporary files
+*.log
+tmp/
+*.tmp
+
+# Environment files
+.env
+.env.*
+
+# Wire
+**/wire_gen.go
+
+# Ignore all Ent files
+/ent/*
+
+# But keep schema folder
+!/ent/schema/

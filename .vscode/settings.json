@@ -1,0 +1,10 @@
+{
+  "files.exclude": {
+    "**/ent/[!s]*/**": true,
+    "**/ent/s[!c]*/**": true,
+    "**/ent/sc[!h]*/**": true,
+    "**/ent/sch[!e]*/**": true,
+    "**/ent/sche[!m]*/**": true,
+    "**/ent/schem[!a]*/**": true
+  }
+}
