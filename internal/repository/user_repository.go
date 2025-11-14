@@ -1,27 +1,32 @@
 package repository
 
 import (
+	"github.com/google/uuid"
 	"github.com/umardev500/laundry/ent"
 	"github.com/umardev500/laundry/ent/user"
 	"github.com/umardev500/laundry/internal/core"
 	"github.com/umardev500/laundry/internal/db"
 	"github.com/umardev500/laundry/internal/domain"
+	"github.com/umardev500/laundry/internal/errors"
 )
 
 type UserRepository interface {
 	Find(ctx *core.Context, f domain.UserFilter) ([]*domain.User, int, error)
+	FindByEmail(ctx *core.Context, email string) (*domain.User, error)
+	FindByID(ctx *core.Context, id uuid.UUID) (*domain.User, error)
 }
 
 type userRepositoryImpl struct {
 	client *db.Client
 }
 
-func NewUserRepository(client *db.Client) *userRepositoryImpl {
+func NewUserRepository(client *db.Client) UserRepository {
 	return &userRepositoryImpl{
 		client: client,
 	}
 }
 
+// Find implements UserRepository
 func (r *userRepositoryImpl) Find(ctx *core.Context, f domain.UserFilter) ([]*domain.User, int, error) {
 	q := r.client.GetConn(ctx).User.Query()
 	criteria := f.Filter
@@ -63,6 +68,42 @@ func (r *userRepositoryImpl) Find(ctx *core.Context, f domain.UserFilter) ([]*do
 	}
 
 	return r.mapEntToDomainList(results), totalCount, nil
+}
+
+// FindByEmail implements UserRepository.
+func (r *userRepositoryImpl) FindByEmail(ctx *core.Context, email string) (*domain.User, error) {
+	conn := r.client.GetConn(ctx)
+	q := conn.User.
+		Query().
+		Where(user.EmailEQ(email)).
+		WithProfile()
+
+	user, err := q.Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, errors.NewUserNotFound(email)
+		}
+
+		return nil, err
+	}
+
+	return r.mapEntToDomain(user), nil
+}
+
+// FindByID implements UserRepository.
+func (r *userRepositoryImpl) FindByID(ctx *core.Context, id uuid.UUID) (*domain.User, error) {
+	conn := r.client.GetConn(ctx)
+	q := conn.User.
+		Query().
+		Where(user.IDEQ(id)).
+		WithProfile()
+
+	user, err := q.First(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.mapEntToDomain(user), nil
 }
 
 // --- Helpers ---

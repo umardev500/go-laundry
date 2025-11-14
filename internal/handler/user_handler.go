@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/umardev500/laundry/internal/core"
 	"github.com/umardev500/laundry/internal/dto"
 	"github.com/umardev500/laundry/internal/mapper"
@@ -25,6 +26,7 @@ func (u *UserHandler) Register(app routerx.Router) {
 	group := app.Group("/users")
 
 	group.Get("/", u.GetAllUsers)
+	group.Get("/{id}", u.GetByID)
 }
 
 func (u *UserHandler) GetAllUsers(c *routerx.Ctx) error {
@@ -47,4 +49,22 @@ func (u *UserHandler) GetAllUsers(c *routerx.Ctx) error {
 	userDTOs := mapper.MapDomainUsersToDTOs(users)
 
 	return core.NewPaginatedResponse(c, userDTOs, filter.Pagination, count)
+}
+
+func (u *UserHandler) GetByID(c *routerx.Ctx) error {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return core.NewErrorResponse(c, err, http.StatusBadRequest)
+	}
+
+	ctx := core.NewCtx(c.Context())
+	user, err := u.service.FindByID(ctx, id)
+	if err != nil {
+		return core.HandleError(c, err)
+	}
+
+	userDTO := mapper.MapDomainUserToDTO(user)
+
+	return core.NewSuccessResponse(c, userDTO)
 }

@@ -28,8 +28,10 @@ func (a *App) Run() error {
 		addr = fmt.Sprintf(":%d", a.config.App.Port)
 	}
 
+	api := a.server.Group("/api")
+
 	for _, route := range a.routes {
-		route.Register(a.server)
+		route.Register(api)
 	}
 
 	log.Info().Msgf("Total module registered: %d", len(a.routes))
