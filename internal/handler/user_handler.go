@@ -25,11 +25,11 @@ func NewUserHandler(s *service.UserService) *UserHandler {
 func (u *UserHandler) Register(app routerx.Router) {
 	group := app.Group("/users")
 
-	group.Get("/", u.GetAllUsers)
-	group.Get("/{id}", u.GetByID)
+	group.Get("/", u.Find)
+	group.Get("/{id}", u.FindByID)
 }
 
-func (u *UserHandler) GetAllUsers(c *routerx.Ctx) error {
+func (u *UserHandler) Find(c *routerx.Ctx) error {
 	var query dto.UserFilter
 	if err := c.QueryParser(&query); err != nil {
 		return err
@@ -51,7 +51,7 @@ func (u *UserHandler) GetAllUsers(c *routerx.Ctx) error {
 	return core.NewPaginatedResponse(c, userDTOs, filter.Pagination, count)
 }
 
-func (u *UserHandler) GetByID(c *routerx.Ctx) error {
+func (u *UserHandler) FindByID(c *routerx.Ctx) error {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
