@@ -10,6 +10,7 @@ import (
 var (
 	ErrUserNotFound      = fmt.Errorf("user not found")
 	ErrUserAlreadyExists = fmt.Errorf("user already exists")
+	ErrProfileRequired   = fmt.Errorf("user profile is required")
 )
 
 func NewUserNotFound(email string) *core.Error {
@@ -25,5 +26,13 @@ func NewUserAlreadyExists(email string) *core.Error {
 		ErrUserAlreadyExists,
 		fmt.Sprintf("User with email %s already exists", email),
 		http.StatusConflict,
+	)
+}
+
+func NewErrProfileRequired() *core.Error {
+	return core.NewError(
+		ErrProfileRequired,
+		"User profile is required",
+		http.StatusBadRequest,
 	)
 }

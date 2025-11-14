@@ -25,8 +25,31 @@ func NewUserHandler(s *service.UserService) *UserHandler {
 func (u *UserHandler) Register(app routerx.Router) {
 	group := app.Group("/users")
 
-	group.Get("/", u.Find)
+	group.Post("/", u.Create)
+	// group.Get("/", u.Find)
 	group.Get("/{id}", u.FindByID)
+}
+
+func (u *UserHandler) Create(c *routerx.Ctx) error {
+	var req dto.CreateUserDTO
+	if err := c.BodyParser(&req); err != nil {
+		return core.NewErrorResponse(c, err, http.StatusBadRequest)
+	}
+
+	cmd, err := req.ToCmd()
+	if err != nil {
+		return core.NewErrorResponse(c, err, http.StatusBadRequest)
+	}
+
+	ctx := core.NewCtx(c.Context())
+	user, err := u.service.Create(ctx, cmd)
+	if err != nil {
+		return core.HandleError(c, err)
+	}
+
+	userDTO := mapper.MapDomainUserToDTO(user)
+
+	return core.NewSuccessResponse(c, userDTO)
 }
 
 func (u *UserHandler) Find(c *routerx.Ctx) error {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/umardev500/laundry/internal/core"
+	"github.com/umardev500/laundry/internal/errors"
 )
 
 // Profile represents the profile information of a user.
@@ -44,6 +45,27 @@ type UserFilter struct {
 	Pagination core.Pagination
 	Order      core.Order[UserOrderField]
 	Filter     *UserFilterCriteria
+}
+
+// NewUser creates a new User domain entity
+// It requires a non-nil Profile and enforces all invariants.
+func NewUser(email, password string, profile *Profile) (*User, error) {
+	if profile == nil {
+		return nil, errors.NewErrProfileRequired()
+	}
+
+	return &User{
+		Email:    email,
+		Password: password,
+		Profile:  profile,
+	}, nil
+}
+
+// NewProfile creates a Profile domain entity.
+func NewProfile(name string) *Profile {
+	return &Profile{
+		Name: name,
+	}
 }
 
 func NewUserFilter(
