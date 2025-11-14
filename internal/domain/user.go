@@ -7,14 +7,25 @@ import (
 	"github.com/umardev500/laundry/internal/core"
 )
 
-type User struct {
-	ID        uuid.UUID
-	Email     string
-	Password  string
+// Profile represents the profile information of a user.
+// It is nested under User and contains user-specific metadata.
+type Profile struct {
+	Name      string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
 
+// User represents a system user with profile information.
+type User struct {
+	ID        uuid.UUID
+	Email     string
+	Password  string
+	Profile   *Profile
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// UserOrderFields defines the allowed fields to order users by.
 type UserOrderField string
 
 const (
@@ -22,20 +33,27 @@ const (
 	UpdatedAt UserOrderField = "updated_at"
 )
 
+// UserFilterCriteria defines the filtering options for querying users.
+type UserFilterCriteria struct {
+	Search         *string
+	IncludeProfile bool
+}
+
+// UserFilter is used for querying users with pagination, sorting, and filtering.
 type UserFilter struct {
 	Pagination core.Pagination
 	Order      core.Order[UserOrderField]
-	Search     *string
+	Filter     *UserFilterCriteria
 }
 
 func NewUserFilter(
-	search *string,
+	filter *UserFilterCriteria,
 	pagination *core.Pagination,
 	order *core.Order[UserOrderField],
 ) UserFilter {
-	f := UserFilter{}
-
-	f.Search = search
+	f := UserFilter{
+		Filter: filter,
+	}
 
 	// Set pagination with default fallback
 	if pagination != nil {

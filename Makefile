@@ -46,3 +46,8 @@ generate: wire ent-gen
 seeder:
 	@echo "🌱 Running database seeders..."
 	@go run ./cmd/seeder/main.go
+
+# Migrate
+migrate:
+	@echo "🌱 Running database migrations..."
+	@go run ./cmd/migrate/main.go

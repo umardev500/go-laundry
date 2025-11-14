@@ -5,12 +5,19 @@ import (
 	"github.com/umardev500/laundry/internal/domain"
 )
 
+type Profile struct {
+	Name string `json:"name"`
+}
+
 type User struct {
-	Email string `json:"email"`
+	Email   string   `json:"email"`
+	Profile *Profile `json:"profile"`
 }
 
 type UserFilter struct {
-	Search   *string `query:"search"`
+	Search         *string `query:"search"`
+	IncludeProfile bool    `query:"include_profile"`
+
 	Limit    int     `query:"limit"`
 	Page     int     `query:"page"`
 	OrderBy  *string `query:"order_by"`
@@ -50,7 +57,10 @@ func (f *UserFilter) ToDomain() (*domain.UserFilter, error) {
 	}
 
 	filter := domain.NewUserFilter(
-		f.Search,
+		&domain.UserFilterCriteria{
+			Search:         f.Search,
+			IncludeProfile: f.IncludeProfile,
+		},
 		paging,
 		order,
 	)

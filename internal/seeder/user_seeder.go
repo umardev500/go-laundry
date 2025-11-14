@@ -21,20 +21,33 @@ func SeedUsers(client *db.Client) error {
 		ID       uuid.UUID
 		Email    string
 		Password string
+		Profile  struct {
+			Name string
+		}
 	}{
-		{ID: aliceID, Email: "alice@example.com", Password: "secret123"},
-		{ID: bobID, Email: "bob@example.com", Password: "password"},
+		{
+			ID:       aliceID,
+			Email:    "alice@example.com",
+			Password: "secret123",
+			Profile:  struct{ Name string }{Name: "Alice"},
+		},
+		{
+			ID:       bobID,
+			Email:    "bob@example.com",
+			Password: "password",
+			Profile:  struct{ Name string }{Name: "Bob"},
+		},
 	}
 
 	for _, u := range users {
-		// Hash password using bcrypt
+		// Hash password
 		hashedPassword, err := security.HashPassword(u.Password)
 		if err != nil {
 			log.Error().Err(err).Msgf("Failed to hash password for user %s", u.Email)
 			return err
 		}
 
-		// Insert into DB
+		// Create or update user
 		err = client.GetConn(ctx).User.Create().
 			SetID(u.ID).
 			SetEmail(u.Email).
@@ -46,6 +59,18 @@ func SeedUsers(client *db.Client) error {
 			Exec(ctx)
 		if err != nil {
 			log.Error().Err(err).Msgf("Failed to seed user %s", u.Email)
+			return err
+		}
+
+		// 2. Create or upsert profile separately
+		err = client.GetConn(ctx).Profile.Create().
+			SetUserID(u.ID).
+			SetName(u.Profile.Name).
+			OnConflict(sql.ConflictColumns("user_id")).
+			UpdateNewValues().
+			Exec(ctx)
+		if err != nil {
+			log.Error().Err(err).Msgf("Failed to seed profile for user %s", u.Email)
 			return err
 		}
 	}

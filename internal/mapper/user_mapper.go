@@ -10,8 +10,17 @@ func MapDomainUserToDTO(u *domain.User) *dto.User {
 	if u == nil {
 		return nil
 	}
+
+	var profileDTO *dto.Profile
+	if u.Profile != nil {
+		profileDTO = &dto.Profile{
+			Name: u.Profile.Name,
+		}
+	}
+
 	return &dto.User{
-		Email: u.Email,
+		Email:   u.Email,
+		Profile: profileDTO,
 	}
 }
 

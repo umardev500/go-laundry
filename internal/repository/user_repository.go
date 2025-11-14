@@ -24,12 +24,13 @@ func NewUserRepository(client *db.Client) *userRepositoryImpl {
 
 func (r *userRepositoryImpl) Find(ctx *core.Context, f domain.UserFilter) ([]*domain.User, int, error) {
 	q := r.client.GetConn(ctx).User.Query()
+	criteria := f.Filter
 
 	// Apply search filter
-	if f.Search != nil && *f.Search != "" {
+	if criteria.Search != nil && *criteria.Search != "" {
 		q = q.Where(
 			user.Or(
-				user.EmailContainsFold(*f.Search),
+				user.EmailContainsFold(*criteria.Search),
 			),
 		)
 	}
@@ -38,6 +39,11 @@ func (r *userRepositoryImpl) Find(ctx *core.Context, f domain.UserFilter) ([]*do
 	totalCount, err := q.Clone().Count(ctx)
 	if err != nil {
 		return nil, 0, err
+	}
+
+	// Include profile (preload the edge)
+	if criteria.IncludeProfile {
+		q = q.WithProfile()
 	}
 
 	// Apply pagination
@@ -61,10 +67,20 @@ func (r *userRepositoryImpl) Find(ctx *core.Context, f domain.UserFilter) ([]*do
 
 // --- Helpers ---
 func (r *userRepositoryImpl) mapEntToDomain(user *ent.User) *domain.User {
+	var profile *domain.Profile
+	if user.Edges.Profile != nil {
+		profile = &domain.Profile{
+			Name:      user.Edges.Profile.Name,
+			CreatedAt: user.Edges.Profile.CreatedAt,
+			UpdatedAt: user.Edges.Profile.UpdatedAt,
+		}
+	}
+
 	return &domain.User{
 		ID:        user.ID,
 		Email:     user.Email,
 		Password:  user.Password,
+		Profile:   profile,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 	}
