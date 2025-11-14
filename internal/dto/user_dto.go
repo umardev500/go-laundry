@@ -20,7 +20,7 @@ type UserFilter struct {
 func (f *UserFilter) ToDomain() (*domain.UserFilter, error) {
 	// Ensure a minimum page of 1
 	page := max(f.Page, 1)
-	offset := (page - 1) * f.Limit
+	// offset := (page - 1) * f.Limit
 
 	var order *core.Order[domain.UserOrderField]
 	if f.OrderBy != nil {
@@ -41,13 +41,17 @@ func (f *UserFilter) ToDomain() (*domain.UserFilter, error) {
 			return nil, err
 		}
 	}
+	var paging *core.Pagination
+	if f.Limit > 0 {
+		paging = &core.Pagination{
+			Limit:  f.Limit,
+			Offset: (page - 1) * f.Limit,
+		}
+	}
 
 	filter := domain.NewUserFilter(
 		f.Search,
-		&core.Pagination{
-			Limit:  f.Limit,
-			Offset: offset,
-		},
+		paging,
 		order,
 	)
 

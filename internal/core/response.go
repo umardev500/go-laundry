@@ -38,19 +38,20 @@ func NewSuccessResponse(c *routerx.Ctx, data any, status ...int) error {
 	})
 }
 
-func NewPaginatedResponse(c *routerx.Ctx, data any, page, pageSize, totalItems int, status ...int) error {
+func NewPaginatedResponse(c *routerx.Ctx, data any, paging Pagination, totalItems int, status ...int) error {
 	code := http.StatusOK
 	if len(status) > 0 {
 		code = status[0]
 	}
 
-	totalPages := int(math.Ceil(float64(totalItems) / float64(pageSize)))
+	totalPages := int(math.Ceil(float64(totalItems) / float64(paging.Limit)))
+	page := max(paging.Offset/paging.Limit, 1)
 
 	return c.Status(code).JSON(&PaginatedResponse{
 		Data: data,
 		Pagination: PaginationData{
 			Page:       page,
-			PageSize:   pageSize,
+			PageSize:   paging.Limit,
 			TotalItems: totalItems,
 			TotalPages: totalPages,
 			HasNext:    page < totalPages,

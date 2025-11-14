@@ -46,5 +46,5 @@ func (u *UserHandler) GetAllUsers(c *routerx.Ctx) error {
 
 	userDTOs := mapper.MapDomainUsersToDTOs(users)
 
-	return core.NewPaginatedResponse(c, userDTOs, query.Page, query.Limit, count)
+	return core.NewPaginatedResponse(c, userDTOs, filter.Pagination, count)
 }
