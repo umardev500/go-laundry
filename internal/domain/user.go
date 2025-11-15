@@ -61,6 +61,8 @@ func NewUser(email, password string, profile *Profile) (*User, error) {
 	}, nil
 }
 
+// --- Factories ---
+
 // NewProfile creates a Profile domain entity.
 func NewProfile(name string) *Profile {
 	return &Profile{
@@ -92,4 +94,24 @@ func NewUserFilter(
 	}
 
 	return f
+}
+
+// --- Methods ---
+func (u *User) Update(email, password *string) (*User, error) {
+	if email != nil {
+		u.Email = *email
+	}
+	if password != nil {
+		u.Password = *password
+	}
+
+	return u, nil
+}
+
+func (p *Profile) Update(name *string) (*Profile, error) {
+	if name != nil {
+		p.Name = *name
+	}
+
+	return p, nil
 }

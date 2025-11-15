@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/umardev500/laundry/ent"
+	"github.com/umardev500/laundry/ent/profile"
 	"github.com/umardev500/laundry/ent/user"
 	"github.com/umardev500/laundry/internal/core"
 	"github.com/umardev500/laundry/internal/db"
@@ -17,6 +18,8 @@ type UserRepository interface {
 	Find(ctx *core.Context, f domain.UserFilter) ([]*domain.User, int, error)
 	FindByEmail(ctx *core.Context, email string) (*domain.User, error)
 	FindByID(ctx *core.Context, id uuid.UUID) (*domain.User, error)
+	Update(ctx *core.Context, u *domain.User) (*domain.User, error)
+	UpdateProfile(ctx *core.Context, userID uuid.UUID, p *domain.Profile) error
 }
 
 type userRepositoryImpl struct {
@@ -31,15 +34,16 @@ func NewUserRepository(client *db.Client) UserRepository {
 
 // Create implements UserRepository.
 func (r *userRepositoryImpl) Create(ctx *core.Context, u *domain.User) (*domain.User, error) {
-	conn := r.client.GetConn(ctx)
 	var user *ent.User
 
-	err := r.client.WithTransaction(ctx, func(ctx context.Context) error {
+	err := r.client.WithTransaction(ctx, func(txCtx context.Context) error {
 		var err error
+		conn := r.client.GetConn(txCtx)
+
 		user, err = conn.User.Create().
 			SetEmail(u.Email).
 			SetPassword(u.Password).
-			Save(ctx)
+			Save(txCtx)
 		if err != nil {
 			return err
 		}
@@ -47,7 +51,7 @@ func (r *userRepositoryImpl) Create(ctx *core.Context, u *domain.User) (*domain.
 		profile, err := conn.Profile.Create().
 			SetUserID(user.ID).
 			SetName(u.Profile.Name).
-			Save(ctx)
+			Save(txCtx)
 		if err != nil {
 			return err
 		}
@@ -141,6 +145,37 @@ func (r *userRepositoryImpl) FindByID(ctx *core.Context, id uuid.UUID) (*domain.
 	}
 
 	return r.mapEntToDomain(user), nil
+}
+
+// Update implements UserRepository.
+// It returns user object without any edges.
+func (r *userRepositoryImpl) Update(ctx *core.Context, u *domain.User) (*domain.User, error) {
+	conn := r.client.GetConn(ctx)
+
+	userObj, err := conn.User.UpdateOneID(u.ID).
+		SetEmail(u.Email).
+		SetPassword(u.Password).
+		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.mapEntToDomain(userObj), nil
+}
+
+// UpdateProfile implements UserRepository.
+func (r *userRepositoryImpl) UpdateProfile(ctx *core.Context, userID uuid.UUID, p *domain.Profile) error {
+	conn := r.client.GetConn(ctx)
+
+	err := conn.Profile.Update().
+		SetName(p.Name).
+		Where(profile.UserIDEQ(userID)).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // --- Helpers ---

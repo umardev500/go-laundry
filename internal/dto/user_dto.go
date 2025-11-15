@@ -38,12 +38,24 @@ type CreateProfileDTO struct {
 // CreateProfileDTO represents the expected payload when creating a new user.
 // Typically converted into application commands inside the handler layer.
 type CreateUserDTO struct {
-	Email    string            `json:"email"`
-	Password string            `json:"password"`
+	Email    string            `json:"email" validate:"required,email"`
+	Password string            `json:"password" validate:"required,min=6"`
 	Profile  *CreateProfileDTO `json:"profile"`
 }
 
-// --- UserFilter methods ---
+// UpdateUserDTO represents the expected payload for updateing a user.
+type UpdateUserDTO struct {
+	Email    *string `json:"email" validate:"omitempty,email"`
+	Password *string `json:"password" validate:"omitempty,password"`
+}
+
+// UpdateProfileDTO represents the expexted payload for update a profile of a user.
+type UpdateProfileDTO struct {
+	Name *string `json:"name" validate:"omitempty,min=3"`
+}
+
+// --- Methods ---
+
 func (f *UserFilter) ToDomain() (*domain.UserFilter, error) {
 	// Ensure a minimum page of 1
 	page := max(f.Page, 1)
@@ -87,7 +99,6 @@ func (f *UserFilter) ToDomain() (*domain.UserFilter, error) {
 	return &filter, nil
 }
 
-// -- CreateUserDTO methods ---
 func (c *CreateUserDTO) ToCmd() (*commands.CreateUserCmd, error) {
 	return &commands.CreateUserCmd{
 		Email:    c.Email,
@@ -95,5 +106,18 @@ func (c *CreateUserDTO) ToCmd() (*commands.CreateUserCmd, error) {
 		Profile: &commands.CreateProfileCmd{
 			Name: c.Profile.Name,
 		},
+	}, nil
+}
+
+func (u *UpdateUserDTO) ToCmd() (*commands.UpdateUserCmd, error) {
+	return &commands.UpdateUserCmd{
+		Email:    u.Email,
+		Password: u.Password,
+	}, nil
+}
+
+func (u *UpdateProfileDTO) ToCmd() (*commands.UpdateProfileCmd, error) {
+	return &commands.UpdateProfileCmd{
+		Name: u.Name,
 	}, nil
 }

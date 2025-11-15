@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/google/uuid"
+	"github.com/umardev500/laundry/ent"
 	"github.com/umardev500/laundry/internal/commands"
 	"github.com/umardev500/laundry/internal/core"
 	"github.com/umardev500/laundry/internal/domain"
@@ -44,4 +45,47 @@ func (s *UserService) FindByEmail(ctx *core.Context, email string) (*domain.User
 
 func (s *UserService) FindByID(ctx *core.Context, id uuid.UUID) (*domain.User, error) {
 	return s.repo.FindByID(ctx, id)
+}
+
+func (s *UserService) Update(ctx *core.Context, id uuid.UUID, cmd *commands.UpdateUserCmd) (*domain.User, error) {
+	user, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	updatedUserPayload, err := user.Update(cmd.Email, cmd.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = s.repo.Update(ctx, updatedUserPayload)
+	if err != nil {
+		if ent.IsConstraintError(err) && cmd.Email != nil {
+			return nil, errors.NewUserAlreadyExists(*cmd.Email)
+		}
+
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// UpdateProfile update a user profile.
+// It returns a user object with the profile edges.
+func (s *UserService) UpdateProfile(ctx *core.Context, userID uuid.UUID, cmd *commands.UpdateProfileCmd) (*domain.User, error) {
+	user, err := s.repo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	updatedProfilePayload, err := user.Profile.Update(cmd.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.repo.UpdateProfile(ctx, userID, updatedProfilePayload); err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }

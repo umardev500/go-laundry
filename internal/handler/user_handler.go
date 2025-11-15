@@ -26,8 +26,10 @@ func (u *UserHandler) Register(app routerx.Router) {
 	group := app.Group("/users")
 
 	group.Post("/", u.Create)
-	// group.Get("/", u.Find)
+	group.Get("/", u.Find)
 	group.Get("/{id}", u.FindByID)
+	group.Put("/{id}", u.Update)
+	group.Put("/{id}/profile", u.UpdateProfile)
 }
 
 func (u *UserHandler) Create(c *routerx.Ctx) error {
@@ -83,6 +85,67 @@ func (u *UserHandler) FindByID(c *routerx.Ctx) error {
 
 	ctx := core.NewCtx(c.Context())
 	user, err := u.service.FindByID(ctx, id)
+	if err != nil {
+		return core.HandleError(c, err)
+	}
+
+	userDTO := mapper.MapDomainUserToDTO(user)
+
+	return core.NewSuccessResponse(c, userDTO)
+}
+
+// Update is update a user
+func (u *UserHandler) Update(c *routerx.Ctx) error {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return core.NewErrorResponse(c, err)
+	}
+
+	var req dto.UpdateUserDTO
+	if err := c.BodyParser(&req); err != nil {
+		return core.NewErrorResponse(c, err, http.StatusBadRequest)
+	}
+
+	// TODO: validate
+
+	cmd, err := req.ToCmd()
+	if err != nil {
+		return core.NewErrorResponse(c, err)
+	}
+
+	ctx := core.NewCtx(c.Context())
+	user, err := u.service.Update(ctx, id, cmd)
+	if err != nil {
+		return core.HandleError(c, err)
+	}
+
+	userDTO := mapper.MapDomainUserToDTO(user)
+
+	return core.NewSuccessResponse(c, userDTO)
+}
+
+func (u *UserHandler) UpdateProfile(c *routerx.Ctx) error {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return core.NewErrorResponse(c, err)
+	}
+
+	var req dto.UpdateProfileDTO
+	if err := c.BodyParser(&req); err != nil {
+		return core.NewErrorResponse(c, err, http.StatusBadRequest)
+	}
+
+	// TODO: validate
+
+	cmd, err := req.ToCmd()
+	if err != nil {
+		return core.NewErrorResponse(c, err)
+	}
+
+	ctx := core.NewCtx(c.Context())
+	user, err := u.service.UpdateProfile(ctx, id, cmd)
 	if err != nil {
 		return core.HandleError(c, err)
 	}
