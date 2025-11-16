@@ -10,28 +10,21 @@ import (
 	"github.com/google/uuid"
 )
 
-type User struct {
+type Tenant struct {
 	ent.Schema
 }
 
-func (User) Fields() []ent.Field {
+func (Tenant) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Immutable(),
-		field.String("email").Unique(),
-		field.String("password"),
+		field.String("name").NotEmpty(),
 		field.Time("created_at").Default(time.Now),
 		field.Time("updated_at").Default(time.Now),
 	}
 }
 
-func (User) Edges() []ent.Edge {
+func (Tenant) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("profile", Profile.Type).
-			Annotations(
-				entsql.OnDelete(entsql.Cascade),
-			).
-			Unique(),
-
 		edge.To("tenant_user", TenantUser.Type).
 			Annotations(
 				entsql.OnDelete(entsql.Cascade),
