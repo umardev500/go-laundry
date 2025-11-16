@@ -14,6 +14,11 @@ func RunAll(client *db.Client) error {
 		if err := SeedUsers(client); err != nil {
 			return err
 		}
+
+		if err := SeedTenants(client); err != nil {
+			return err
+		}
+
 		return nil
 	})
 }

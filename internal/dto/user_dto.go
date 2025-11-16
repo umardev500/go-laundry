@@ -73,7 +73,7 @@ func (f *UserFilter) ToDomain() (*domain.UserFilter, error) {
 		}
 
 		err := order.Validate(func(uof domain.UserOrderField) bool {
-			return uof == domain.CreatedAt || uof == domain.UpdatedAt
+			return uof == domain.UserOrderFieldCreatedAt || uof == domain.UserOrderFieldCreatUpdatedAt
 		})
 		if err != nil {
 			return nil, err

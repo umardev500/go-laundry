@@ -11,6 +11,7 @@ import (
 )
 
 func SeedUsers(client *db.Client) error {
+	log.Info().Msg("User seeding...")
 	ctx := context.Background()
 
 	// Hardcoded UUIDs for reference

@@ -30,8 +30,8 @@ type User struct {
 type UserOrderField string
 
 const (
-	CreatedAt UserOrderField = "created_at"
-	UpdatedAt UserOrderField = "updated_at"
+	UserOrderFieldCreatedAt      UserOrderField = "created_at"
+	UserOrderFieldCreatUpdatedAt UserOrderField = "updated_at"
 )
 
 // UserFilterCriteria defines the filtering options for querying users.
@@ -80,18 +80,10 @@ func NewUserFilter(
 	}
 
 	// Set pagination with default fallback
-	if pagination != nil {
-		f.Pagination = *pagination
-	} else {
-		f.Pagination = core.DefaultPagination()
-	}
+	f.Pagination = core.DefaultPaginationFallback(pagination)
 
 	// Set order with default fallback
-	if order != nil {
-		f.Order = *order
-	} else {
-		f.Order = core.DefaultOrder(UpdatedAt)
-	}
+	f.Order = core.DefaultOrderFallback(order, UserOrderFieldCreatedAt)
 
 	return f
 }

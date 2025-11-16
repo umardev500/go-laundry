@@ -11,8 +11,10 @@ type Route interface {
 
 func NewRoutes(
 	userHandler *handler.UserHandler,
+	tenantHandler *handler.TenantHandler,
 ) []Route {
 	return []Route{
 		userHandler,
+		tenantHandler,
 	}
 }

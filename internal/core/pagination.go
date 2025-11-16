@@ -35,14 +35,22 @@ type Pagination struct {
 	Offset int
 }
 
-func DefaultOrder[T any](field T) Order[T] {
+func DefaultOrderFallback[T any](order *Order[T], fallbackField T) Order[T] {
+	if order != nil {
+		return *order
+	}
+
 	return Order[T]{
-		Field: field,
+		Field: fallbackField,
 		Dir:   ASC,
 	}
 }
 
-func DefaultPagination() Pagination {
+func DefaultPaginationFallback(paging *Pagination) Pagination {
+	if paging != nil {
+		return *paging
+	}
+
 	return Pagination{
 		Limit:  10,
 		Offset: 0,
