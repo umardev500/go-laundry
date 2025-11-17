@@ -2,6 +2,7 @@ package dto
 
 import (
 	"github.com/google/uuid"
+	"github.com/umardev500/laundry/internal/commands"
 	"github.com/umardev500/laundry/internal/core"
 	"github.com/umardev500/laundry/internal/domain"
 )
@@ -18,6 +19,14 @@ type TenantFilter struct {
 type Tenant struct {
 	ID   uuid.UUID `json:"id"`
 	Name string    `json:"name"`
+}
+
+type CreateTenant struct {
+	Name string `json:"name" validate:"required,min=3"`
+}
+
+type UpdateTenant struct {
+	Name *string `json:"name" validate:"omitempty,min=3"`
 }
 
 // --- Methods ---
@@ -62,4 +71,16 @@ func (f *TenantFilter) ToDomain() (*domain.TenantFilter, error) {
 	)
 
 	return &filter, nil
+}
+
+func (t *CreateTenant) ToCmd() (*commands.CreateTenantCmd, error) {
+	return &commands.CreateTenantCmd{
+		Name: t.Name,
+	}, nil
+}
+
+func (t *UpdateTenant) ToCmd() (*commands.UpdateTenantCmd, error) {
+	return &commands.UpdateTenantCmd{
+		Name: t.Name,
+	}, nil
 }

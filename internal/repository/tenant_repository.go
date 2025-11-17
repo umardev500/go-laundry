@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/google/uuid"
 	"github.com/umardev500/laundry/ent"
 	"github.com/umardev500/laundry/ent/tenant"
 	"github.com/umardev500/laundry/internal/core"
@@ -9,7 +10,11 @@ import (
 )
 
 type TenantRepository interface {
+	Create(ctx *core.Context, t *domain.Tenant) (*domain.Tenant, error)
+	Delete(ctx *core.Context, id uuid.UUID) error
 	Find(ctx *core.Context, f *domain.TenantFilter) ([]*domain.Tenant, int, error)
+	FindByID(ctx *core.Context, id uuid.UUID) (*domain.Tenant, error)
+	Update(ctx *core.Context, t *domain.Tenant) (*domain.Tenant, error)
 }
 
 type tenantRepositoryImpl struct {
@@ -20,6 +25,25 @@ func NewTenantRepository(c *db.Client) TenantRepository {
 	return &tenantRepositoryImpl{
 		client: c,
 	}
+}
+
+// Create implements TenantRepository.
+func (r *tenantRepositoryImpl) Create(ctx *core.Context, t *domain.Tenant) (*domain.Tenant, error) {
+	conn := r.client.GetConn(ctx)
+	tenantObj, err := conn.Tenant.Create().
+		SetName(t.Name).
+		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.mapEntToDomain(tenantObj), nil
+}
+
+// Delete implements TenantRepository.
+func (r *tenantRepositoryImpl) Delete(ctx *core.Context, id uuid.UUID) error {
+	conn := r.client.GetConn(ctx)
+	return conn.Tenant.DeleteOneID(id).Exec(ctx)
 }
 
 // Find implements TenantRepository.
@@ -59,6 +83,33 @@ func (r *tenantRepositoryImpl) Find(ctx *core.Context, f *domain.TenantFilter) (
 	}
 
 	return r.mapEntToDomainList(results), totalCount, nil
+}
+
+// FindByID implements TenantRepository.
+func (r *tenantRepositoryImpl) FindByID(ctx *core.Context, id uuid.UUID) (*domain.Tenant, error) {
+	conn := r.client.GetConn(ctx)
+	tenantObj, err := conn.Tenant.Query().
+		Where(tenant.IDEQ(id)).
+		Only(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.mapEntToDomain(tenantObj), nil
+}
+
+// Update implements TenantRepository.
+func (r *tenantRepositoryImpl) Update(ctx *core.Context, t *domain.Tenant) (*domain.Tenant, error) {
+	conn := r.client.GetConn(ctx)
+	qb := conn.Tenant.UpdateOneID(t.ID).
+		SetName(t.Name)
+
+	tenantObj, err := qb.Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.mapEntToDomain(tenantObj), nil
 }
 
 // --- Helpers ---
