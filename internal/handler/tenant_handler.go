@@ -12,12 +12,14 @@ import (
 )
 
 type TenantHandler struct {
-	service *service.TenantService
+	service           *service.TenantService
+	tenantUserService *service.TenantUserService
 }
 
-func NewTenantHandler(s *service.TenantService) *TenantHandler {
+func NewTenantHandler(s *service.TenantService, tus *service.TenantUserService) *TenantHandler {
 	return &TenantHandler{
-		service: s,
+		service:           s,
+		tenantUserService: tus,
 	}
 }
 
@@ -29,6 +31,9 @@ func (h *TenantHandler) Register(app routerx.Router) {
 	group.Get("/", h.Find)
 	group.Get("/{id}", h.FindByID)
 	group.Put("/{id}", h.Update)
+
+	// Tenant users
+	group.Get("/{id}/users", h.FindUsers)
 }
 
 func (h *TenantHandler) Create(c *routerx.Ctx) error {
@@ -134,4 +139,32 @@ func (h *TenantHandler) Update(c *routerx.Ctx) error {
 	}
 
 	return core.NewSuccessResponse(c, mapper.MapDomainTenantToDTO(result))
+}
+
+// --- Tenant User Handlers ---
+func (h *TenantHandler) FindUsers(c *routerx.Ctx) error {
+	var query dto.TenantUserFilter
+	if err := c.QueryParser(&query); err != nil {
+		return core.NewErrorResponse(c, err, http.StatusBadRequest)
+	}
+
+	filter, err := query.ToDomain()
+	if err != nil {
+		return core.NewErrorResponse(c, err, http.StatusBadRequest)
+	}
+
+	ctx := core.NewCtx(c.Context())
+	tenantUsers, count, err := h.tenantUserService.Find(ctx, filter)
+	if err != nil {
+		return core.HandleError(c, err)
+	}
+
+	mappedData := mapper.MapDomainTenantUserToDTOs(tenantUsers)
+
+	return core.NewPaginatedResponse(
+		c,
+		mappedData,
+		filter.Pagination,
+		count,
+	)
 }

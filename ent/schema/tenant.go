@@ -25,7 +25,7 @@ func (Tenant) Fields() []ent.Field {
 
 func (Tenant) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("tenant_user", TenantUser.Type).
+		edge.To("tenant_users", TenantUser.Type).
 			Annotations(
 				entsql.OnDelete(entsql.Cascade),
 			),

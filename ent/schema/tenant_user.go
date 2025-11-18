@@ -26,14 +26,14 @@ func (TenantUser) Fields() []ent.Field {
 func (TenantUser) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("user", User.Type).
-			Ref("tenant_user").
+			Ref("tenant_users").
 			Field("user_id").
 			Required().
 			Immutable().
 			Unique(),
 
 		edge.From("tenant", Tenant.Type).
-			Ref("tenant_user").
+			Ref("tenant_users").
 			Field("tenant_id").
 			Required().
 			Immutable().

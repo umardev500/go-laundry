@@ -32,7 +32,7 @@ func (User) Edges() []ent.Edge {
 			).
 			Unique(),
 
-		edge.To("tenant_user", TenantUser.Type).
+		edge.To("tenant_users", TenantUser.Type).
 			Annotations(
 				entsql.OnDelete(entsql.Cascade),
 			),
