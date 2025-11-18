@@ -38,6 +38,11 @@ func (r *tenantUserRepositoryImpl) Find(ctx *core.Context, f *domain.TenantUserF
 	q := r.client.GetConn(ctx).TenantUser.Query()
 	criteria := f.Criteria
 
+	// Filter by tenant ID
+	if criteria.TenantID != nil {
+		q = q.Where(tenantuser.TenantIDEQ(*criteria.TenantID))
+	}
+
 	// Apply search filter
 	if criteria.Search != nil {
 		search := *criteria.Search

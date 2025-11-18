@@ -18,6 +18,7 @@ type TenantUserFilterCriteria struct {
 	Search         *string
 	IncludeUser    bool
 	IncludeProfile bool
+	TenantID       *uuid.UUID
 }
 
 type TenantUserFilter struct {
