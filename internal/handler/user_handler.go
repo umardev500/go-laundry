@@ -43,7 +43,7 @@ func (u *UserHandler) Create(c *routerx.Ctx) error {
 		return core.NewErrorResponse(c, err, http.StatusBadRequest)
 	}
 
-	ctx := core.NewCtx(c.Context())
+	ctx := c.Locals(core.ContextKey).(*core.Context)
 	user, err := u.service.Create(ctx, cmd)
 	if err != nil {
 		return core.HandleError(c, err)
@@ -65,7 +65,7 @@ func (u *UserHandler) Find(c *routerx.Ctx) error {
 		return core.NewErrorResponse(c, err, http.StatusBadRequest)
 	}
 
-	ctx := core.NewCtx(c.Context())
+	ctx := c.Locals(core.ContextKey).(*core.Context)
 	users, count, err := u.service.Find(ctx, *filter)
 	if err != nil {
 		return core.HandleError(c, err)
@@ -83,7 +83,7 @@ func (u *UserHandler) FindByID(c *routerx.Ctx) error {
 		return core.NewErrorResponse(c, err, http.StatusBadRequest)
 	}
 
-	ctx := core.NewCtx(c.Context())
+	ctx := c.Locals(core.ContextKey).(*core.Context)
 	user, err := u.service.FindByID(ctx, id)
 	if err != nil {
 		return core.HandleError(c, err)
@@ -114,7 +114,7 @@ func (u *UserHandler) Update(c *routerx.Ctx) error {
 		return core.NewErrorResponse(c, err)
 	}
 
-	ctx := core.NewCtx(c.Context())
+	ctx := c.Locals(core.ContextKey).(*core.Context)
 	user, err := u.service.Update(ctx, id, cmd)
 	if err != nil {
 		return core.HandleError(c, err)
@@ -144,7 +144,7 @@ func (u *UserHandler) UpdateProfile(c *routerx.Ctx) error {
 		return core.NewErrorResponse(c, err)
 	}
 
-	ctx := core.NewCtx(c.Context())
+	ctx := c.Locals(core.ContextKey).(*core.Context)
 	user, err := u.service.UpdateProfile(ctx, id, cmd)
 	if err != nil {
 		return core.HandleError(c, err)

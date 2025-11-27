@@ -50,7 +50,7 @@ func (h *TenantHandler) Create(c *routerx.Ctx) error {
 		return core.NewErrorResponse(c, err)
 	}
 
-	ctx := core.NewCtx(c.Context())
+	ctx := c.Locals(core.ContextKey).(*core.Context)
 	result, err := h.service.Create(ctx, cmd)
 	if err != nil {
 		return core.HandleError(c, err)
@@ -66,7 +66,7 @@ func (h *TenantHandler) Delete(c *routerx.Ctx) error {
 		return core.NewErrorResponse(c, err, http.StatusBadRequest)
 	}
 
-	ctx := core.NewCtx(c.Context())
+	ctx := c.Locals(core.ContextKey).(*core.Context)
 	err = h.service.Delete(ctx, id)
 	if err != nil {
 		return core.HandleError(c, err)
@@ -86,7 +86,7 @@ func (h *TenantHandler) Find(c *routerx.Ctx) error {
 		return core.NewErrorResponse(c, err, http.StatusBadRequest)
 	}
 
-	ctx := core.NewCtx(c.Context())
+	ctx := c.Locals(core.ContextKey).(*core.Context)
 	tenants, count, err := h.service.Find(ctx, filter)
 	if err != nil {
 		return core.HandleError(c, err)
@@ -104,7 +104,7 @@ func (h *TenantHandler) FindByID(c *routerx.Ctx) error {
 		return core.NewErrorResponse(c, err, http.StatusBadRequest)
 	}
 
-	ctx := core.NewCtx(c.Context())
+	ctx := c.Locals(core.ContextKey).(*core.Context)
 	result, err := h.service.FindByID(ctx, id)
 	if err != nil {
 		return core.HandleError(c, err)
@@ -127,7 +127,7 @@ func (h *TenantHandler) Update(c *routerx.Ctx) error {
 
 	// TODO: validate
 
-	ctx := core.NewCtx(c.Context())
+	ctx := c.Locals(core.ContextKey).(*core.Context)
 	cmd, err := req.ToCmd()
 	if err != nil {
 		return core.NewErrorResponse(c, err)
@@ -153,7 +153,7 @@ func (h *TenantHandler) FindUsers(c *routerx.Ctx) error {
 		return core.NewErrorResponse(c, err, http.StatusBadRequest)
 	}
 
-	ctx := core.NewCtx(c.Context())
+	ctx := c.Locals(core.ContextKey).(*core.Context)
 	tenantUsers, count, err := h.tenantUserService.Find(ctx, filter)
 	if err != nil {
 		return core.HandleError(c, err)

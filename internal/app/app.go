@@ -5,6 +5,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/umardev500/laundry/internal/config"
+	"github.com/umardev500/laundry/internal/middleware"
 	"github.com/umardev500/routerx"
 )
 
@@ -29,6 +30,7 @@ func (a *App) Run() error {
 	}
 
 	api := a.server.Group("/api")
+	api.Use(middleware.ContextMiddleware())
 
 	for _, route := range a.routes {
 		route.Register(api)
